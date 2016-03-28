@@ -1,0 +1,9 @@
+model {
+  for(i in 1:Ntotal){
+    y[i] ~ dbin(theta[cond[i]], N[i])
+  }
+  theta[1] <- baseline + diff/2
+  theta[2] <- baseline - diff/2
+  baseline ~ dbeta(1,1)
+  diff ~ dnorm(0, 1 / 1^2)
+}

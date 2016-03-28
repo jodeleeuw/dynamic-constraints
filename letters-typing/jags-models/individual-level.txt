@@ -1,0 +1,108 @@
+model {
+
+  for(i in 1:ndata){
+  
+    #### base adaptation curve ####
+
+    mu.adapt[i] <- a.adapt[subject[i]] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))
+  
+    #### curve for N character (unpredictable)
+  
+    rt.N[i] ~ dlnorm(N.log.mu[i], sd.log.N.rt[i])
+    N.log.mu[i] <- log( N.mu[i]^2 / sqrt(sd.rt^2 + N.mu[i]^2) )
+    sd.log.N.rt[i] <- 1 / sqrt( log( 1 + (sd.rt^2 / N.mu[i]^2) ))^2
+    
+    N.mu[i] <- mu.adapt[i] + item.difference[subject[i]] / 2
+    
+    #### curve for W character (predictable) ####
+    
+    rt.W[i] ~ dlnorm(W.log.mu[i], sd.log.W.rt[i])
+    W.log.mu[i] <- log( W.mu[i]^2 / sqrt(sd.rt^2 + W.mu[i]^2) )
+    sd.log.W.rt[i] <- 1 / sqrt( log( 1 + (sd.rt^2 / W.mu[i]^2) ))^2
+  
+    W.mu[i] <- W.mu.switch[i, W.post.offset[i]]
+    W.mu.switch[i,1] <- mu.adapt[i] - (item.difference[subject[i]] / 2)
+    W.mu.switch[i,2] <- mu.adapt[i] * (1 + b.W[subject[i]] * (( t[i] + 1 - offset.W[subject[i]] ) ^ -c.W[subject[i]] - 1)) - (item.difference[subject[i]] / 2)
+    
+    W.post.offset[i] <- step(t[i] - offset.W[subject[i]]) + 1 # this param = 1 when t < offset, = 2 when t >= offset
+    
+  }
+  
+  for(s in 1:nsubjects){
+  
+    # item level effect for N v. W
+    item.difference[s] ~ dnorm(item.difference.group, 1 / item.difference.group.sd ^ 2)
+  
+    # fit for N curve
+    a.adapt[s] ~ dnorm(a.adapt.group, 1 / a.adapt.group.sd ^ 2)T(0.01,2000)
+    b.adapt[s] ~ dbeta(b.adapt.a, b.adapt.b )
+    c.adapt[s] ~ dgamma(c.adapt.sh, c.adapt.ra)
+    
+    # is this subject a learner? 1 = yes, 2 = no.
+    is.learner[s] <- 2 - is.learner.p[s]
+    is.learner.p[s] ~ dbern(learner.cond[cond[s]])
+    
+    # learning curves depend on whether subject is a learner
+    b.W[s] <- b.W.model[is.learner[s],s] 
+    c.W[s] <- c.W.model[is.learner[s],s] 
+    offset.W[s] <- offset.W.model[is.learner[s],s]
+    
+    # the learning model
+    b.W.model[1,s] ~ dbeta( b.W.a , b.W.b )
+    c.W.model[1,s] ~ dgamma(c.W.sh, c.W.ra)
+    offset.W.model[1,s] ~ dpois(offset.mode[cond[s]])T(,35)
+    
+    # the non-learning model
+    b.W.model[2,s] <- 0
+    c.W.model[2,s] <- 0
+    offset.W.model[2,s] <- 0
+  }
+  
+  # prior on condition level parameters
+  for(c in 1:3){
+    learner.cond[c] ~ dunif(0,1)
+    offset.mode[c] ~ dunif(1,36)
+  }
+  
+  # group level estimates for base adaptation curve
+  a.adapt.group ~ dnorm(1000, 1 / 250^2)T(0,2000)
+  a.adapt.group.sd ~ dgamma(1.105125, 0.005256246) # mode = 20, sd = 200
+  
+  b.adapt.group.mode ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
+  b.adapt.group.concentration <- 2 + b.adapt.group.concentration.k
+  b.adapt.group.concentration.k ~ dgamma(1.283196, 0.05663911) # mode = 5, sd = 20
+  
+  b.adapt.a <- b.adapt.group.mode * (b.adapt.group.concentration-2) + 1
+  b.adapt.b <- (1 - b.adapt.group.mode) * (b.adapt.group.concentration-2) + 1
+  
+  c.adapt.group ~ dgamma(1.01005, 0.1005012) # mode = 0.1, sd = 10
+  c.adapt.group.sd ~ dgamma(1.01005, 0.1005012) # mode = 0.1, sd = 10
+  
+  c.adapt.sh <- 1 + c.adapt.group * c.adapt.ra
+  c.adapt.ra <- (c.adapt.group + sqrt(c.adapt.group^2 + 4* c.adapt.group.sd^2)) / (2* c.adapt.group.sd^2)
+  
+  item.difference.group ~ dnorm(0, 1 / 200^2)
+  item.difference.group.sd ~ dgamma(1.640388, 0.006403882) # mode = 100, sd = 200
+  
+  # group level estimates for learners
+  b.W.group.mode ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
+  b.W.group.concentration <- 2 + b.W.group.concentration.k
+  b.W.group.concentration.k ~ dgamma(1.283196, 0.05663911) # mode = 5, sd = 20
+  
+  b.W.a <- b.W.group.mode * (b.W.group.concentration-2) + 1
+  b.W.b <- (1 - b.W.group.mode) * (b.W.group.concentration-2) + 1
+  
+  c.W.group ~ dgamma(1.068926, 0.6892592) # mode = 0.1, sd = 1.5
+  c.W.group.sd ~ dgamma(1.068926, 0.6892592) # mode = 0.1, sd = 1.5
+  
+  c.W.sh <- 1 + c.W.group * c.W.ra
+  c.W.ra <- (c.W.group + sqrt(c.W.group^2 + 4* c.W.group.sd^2)) / (2* c.W.group.sd^2)
+  
+  # noise around the rt measurements
+  sd.rt ~ dgamma(sd.rt.sh, sd.rt.ra)
+  sd.rt.sh <- 1 + sd.rt.mode * sd.rt.ra
+  sd.rt.ra <- (sd.rt.mode + sqrt(sd.rt.mode^2 + 4*sd.rt.sd^2)) / (2*sd.rt.sd^2)
+  sd.rt.mode <- 200
+  sd.rt.sd <- 500
+  
+}
