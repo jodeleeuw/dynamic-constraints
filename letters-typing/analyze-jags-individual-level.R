@@ -9,6 +9,9 @@ source('lib/DBDA2E-utilities.R')
 load('data/jags-result-individual.Rdata')
 load('data/data-for-individual-model.Rdata')
 
+# effective sample size
+effectiveSize(jags.result.individual.power)
+
 # count subjects
 n.subjects <- length(unique(data.for.model$subject))
 

@@ -28,15 +28,12 @@ data.model$ndata <- nrow(data.summary)
 # run the model ####
 
 monitor.parameters <- c(
-  'a.base.z','b.base.z','c.base.z', 
-  'a.cond.z', 'b.cond.z', 'c.cond.z',
-  'a.position.z','b.position.z','c.position.z',
-  'a.cond.position.z','b.cond.position.z','c.cond.position.z',
+  'a.cond.position','b.cond.position','c.cond.position',
   'a.overall.mode','a.overall.sd','b.overall.mode','b.overall.concentration',
   'c.overall.mode','c.overall.sd',
   'sd.rt'
 )
 
-jags.result.group <- run.jags('jags-models/group-level.txt', monitor=monitor.parameters, data=data.model, adapt = 5000, burnin = 10000, n.chains = 4, sample = 10000, thin=250, method='parallel')
+jags.result.group <- run.jags('jags-models/group-level.txt', monitor=monitor.parameters, data=data.model, adapt = 5000, burnin = 10000, n.chains = 4, sample = 10000, thin=200, method='parallel')
 save(jags.result.group, file="data/jags-result-group.Rdata")
 

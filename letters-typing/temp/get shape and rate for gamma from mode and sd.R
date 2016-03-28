@@ -1,5 +1,5 @@
-g.mode <- 0.1
-g.sd <- 1
+g.mode <- 100
+g.sd <- 250
 
 (rate <- (g.mode + sqrt(g.mode^2 + 4*g.sd^2)) / (2*g.sd^2))
 (shape <- 1 + g.mode*rate)

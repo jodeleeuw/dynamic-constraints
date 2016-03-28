@@ -57,5 +57,5 @@ parameters <- c(
   'is.learner', 'learner.cond', 'offset.mode', 
   'sd.rt' 
 )
-jags.result.individual.power <- run.jags('jags-models/individual-level.txt', data=data.model, monitor = parameters, n.chains=4, burnin=10000, sample=5000, method='parallel')
-save(jags.result.individual.power, file="data/jags-result-individual.Rdata")
+jags.result.individual <- run.jags('jags-models/individual-level.txt', data=data.model, monitor = parameters, n.chains=4, burnin=10000, sample=50000, thin=10, method='parallel')
+save(jags.result.individual, file="data/jags-result-individual.Rdata")

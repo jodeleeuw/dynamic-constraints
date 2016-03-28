@@ -19,13 +19,11 @@ model {
     }
   }
   
-  
   a.overall.mode ~ dnorm(1000, 1 / 250^2)
   a.overall.sd ~ dgamma(1.393487, 0.003934868) # mode 100, sd 300
   
   a.overall.sh <- 1 + a.overall.mode * a.overall.ra
   a.overall.ra <- (a.overall.mode + sqrt(a.overall.mode^2 + 4*a.overall.sd^2)) / (2*a.overall.sd^2)
-  
   
   b.overall.mode ~ dunif(0,1)
   b.overall.concentration <- b.overall.k + 2
@@ -46,37 +44,37 @@ model {
   sd.rt.mode <- 100
   sd.rt.sd <- 250
   
-  # convert to sum-to-zero deflections
-  for(c in 1:3){
-    for(p in 1:3){
-      a.means[c,p] <- a.cond.position[c,p]
-      b.means[c,p] <- b.cond.position[c,p]
-      c.means[c,p] <- c.cond.position[c,p]
-    }
-  }
-  
-  a.base.z <- mean(a.means[1:3,1:3])
-  b.base.z <- mean(b.means[1:3,1:3])
-  c.base.z <- mean(c.means[1:3,1:3])
-  
-  for(c in 1:3){
-    a.cond.z[c] <- mean(a.means[c,1:3]) - a.base.z
-    b.cond.z[c] <- mean(b.means[c,1:3]) - b.base.z
-    c.cond.z[c] <- mean(c.means[c,1:3]) - c.base.z
-  }
-  
-  for(p in 1:3){
-    a.position.z[p] <- mean(a.means[1:3,p]) - a.base.z
-    b.position.z[p] <- mean(b.means[1:3,p]) - b.base.z
-    c.position.z[p] <- mean(c.means[1:3,p]) - c.base.z
-  }
-  
-  for(c in 1:3){
-    for(p in 1:3){
-      a.cond.position.z[c,p] <- a.means[c,p] - (a.base.z + a.cond.z[c] + a.position.z[p])
-      b.cond.position.z[c,p] <- b.means[c,p] - (b.base.z + b.cond.z[c] + b.position.z[p])
-      c.cond.position.z[c,p] <- c.means[c,p] - (c.base.z + c.cond.z[c] + c.position.z[p])
-    }
-  }
+#  # convert to sum-to-zero deflections
+#  for(c in 1:3){
+#    for(p in 1:3){
+#      a.means[c,p] <- a.cond.position[c,p]
+#      b.means[c,p] <- b.cond.position[c,p]
+#      c.means[c,p] <- c.cond.position[c,p]
+#    }
+#  }
+#  
+#  a.base.z <- mean(a.means[1:3,1:3])
+#  b.base.z <- mean(b.means[1:3,1:3])
+#  c.base.z <- mean(c.means[1:3,1:3])
+#  
+#  for(c in 1:3){
+#    a.cond.z[c] <- mean(a.means[c,1:3]) - a.base.z
+#    b.cond.z[c] <- mean(b.means[c,1:3]) - b.base.z
+#    c.cond.z[c] <- mean(c.means[c,1:3]) - c.base.z
+#  }
+#  
+#  for(p in 1:3){
+#    a.position.z[p] <- mean(a.means[1:3,p]) - a.base.z
+#    b.position.z[p] <- mean(b.means[1:3,p]) - b.base.z
+#    c.position.z[p] <- mean(c.means[1:3,p]) - c.base.z
+#  }
+#  
+#  for(c in 1:3){
+#    for(p in 1:3){
+#      a.cond.position.z[c,p] <- a.means[c,p] - (a.base.z + a.cond.z[c] + a.position.z[p])
+#      b.cond.position.z[c,p] <- b.means[c,p] - (b.base.z + b.cond.z[c] + b.position.z[p])
+#      c.cond.position.z[c,p] <- c.means[c,p] - (c.base.z + c.cond.z[c] + c.position.z[p])
+#    }
+#  }
   
 }
