@@ -1,0 +1,19 @@
+#
+# data that needs to come in:
+# y = number of correct responses
+# n = number of trials
+# a = model weight for target
+# b = model weight for foil
+# m = which model this row is for
+#
+
+model {
+  for(i in 1:num_rows){
+    y[i] ~ dbinom(p[i], n[i])
+    p[i] <- exp(a[i]*g[i]) / ( exp(a[i]*g[i]) + exp(b[i]*g[i]) )
+    g[i] <- gamma[ m[i] ]
+  }
+  for(model in 1:3){
+    gamma[model] ~ dunif(0,100)
+  }
+}

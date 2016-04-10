@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+
+    <head>
+        <title>Experiment</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="raphael-min.js"></script>
+        <script src="jspsych/v2.1.1/jspsych.js"></script>
+        <script src="jspsych/v2.1.1/plugins/jspsych-vsl-animate-occlusion.js"></script>
+        <script src="underscore-min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+        <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/black-tie/jquery-ui.min.css"
+        rel="stylesheet" type="text/css"></link>
+        <style>
+            body {
+                font-size: 18px;
+                font-family:'Palatino Linotype', 'Book Antiqua', Palatino, FreeSerif, serif;
+            }
+            em {
+                font-style: normal;
+                font-weight: bold;
+            }
+            #jspsych_target {
+                width: 800px;
+                margin: auto;
+                text-align: center;
+            }
+            img {
+                width: 150px;
+            }
+            #target_shapes {
+                width: 600px;
+                height: 180px;
+                text-align: center;
+                margin-top: 30px;
+                margin-bottom: 30px;
+            }
+            #target_shapes img {
+                width: 150px;
+                margin:15px;
+                float:left;
+            }
+
+        </style>
+    </head>
+
+    <body>
+        <div id="jspsych_target"></div>
+    </body>
+    <script>
+
+        // create list of all stimuli, and randomize order
+        var stimuli = [];
+        for (var i = 1; i <= 12; i++) {
+            stimuli.push("img/" + i + ".gif");
+        }
+        stimuli = _.shuffle(stimuli);
+
+        // create triples array to hold sets of stimuli
+        // that will be jointly presented
+        var triples = [];
+        triples[0] = [stimuli[0], stimuli[1], stimuli[2]];
+        triples[1] = [stimuli[3], stimuli[4], stimuli[5]];
+        triples[2] = [stimuli[6], stimuli[7], stimuli[8]];
+        triples[3] = [stimuli[9], stimuli[10],stimuli[11]];
+
+        // generate sequences
+        function generate_sequence(){
+            var N = 24;
+            var bases = [0, 1, 2, 3];
+            var sequence = _.shuffle(bases);
+            for(var i=1; i<N; i++){
+                var toadd = _.shuffle(bases);
+                while(toadd[0]==sequence[sequence.length-1]){
+                    toadd = _.shuffle(bases);
+                }
+                sequence = sequence.concat(toadd);
+            }
+
+            return sequence;
+        }
+
+        function expand_sequence(seq){
+            var sequence = [];
+            for(var i=0;i<seq.length;i++){
+                sequence = sequence.concat(triples[seq[i]]);
+            }
+            return sequence;
+        }
+
+        var base_sequence = generate_sequence();
+        var expanded_sequence = expand_sequence(base_sequence);
+
+        // create sequence blocks
+        var seq_block = {
+            type: "vsl-animate-occlusion",
+            stimuli: expanded_sequence,
+            timing_post_trial: 1000,
+            canvas_size: [600,400],
+            image_size: [150,150],
+            data: {'block':i, 'trial_type_detail': 'sequence'}
+        };
+
+
+        // define experiment structure
+        var exp_blocks = [];
+
+        exp_blocks.push(seq_block);
+
+        // preload stimuli
+        jsPsych.preloadImages(stimuli, start_experiment); // start!
+
+        function start_experiment() {
+
+                jsPsych.init({
+                    display_element: $('#jspsych_target'),
+                    experiment_structure: exp_blocks
+                });
+
+        }
+    </script>
+
+</html>
