@@ -1,0 +1,50 @@
+model {
+  
+  for(i in 1:ndata){
+  
+    rt[i] ~ dlnorm(log.mu[i], sd.log.rt[i])
+    log.mu[i] <- log( mu[i]^2 / sqrt(sd.rt^2 + mu[i]^2) )
+    sd.log.rt[i] <- 1 / sqrt( log( 1 + (sd.rt^2 / mu[i]^2) ))^2
+    
+    mu[i] <- mu.switch[i, which.model[i]]
+    mu.switch[i,1] <- (a.adapt[symbol[i]] * (1 + b.adapt * (t[i] ^ -c.adapt - 1)))
+    mu.switch[i,2] <- (a.adapt[symbol[i]] * (1 + b.adapt * (t[i] ^ -c.adapt - 1))) * (1 + b.i[i] * (( t[i] + 1 - offset[symbol[i]] ) ^ -c.i[i] - 1))
+    
+    # this param = 1 when t < offset OR when symbol[i] is unpredictable, = 2 when t >= offset && symbol is predictable
+    which.model[i] <- ifelse(equals(symbol.type[i], 1), 1, step(t[i] - offset[symbol[i]]) + 1) 
+    
+    # pseudopriors when t < offset
+    b.i[i] <- equals(which.model[i], 1)*b.pseudo + equals(which.model[i], 2)*b[symbol[i]]
+    c.i[i] <- equals(which.model[i], 1)*c.pseudo + equals(which.model[i], 2)*c[symbol[i]]
+    
+  }
+  
+  # fit for adaptation curves
+  for(s in 1:8){
+    a.adapt[s] ~ dnorm(1000, 1 / 250^2)T(0,2000)
+  }
+  b.adapt ~ dbeta(1.75, 3.25)
+  c.adapt ~ dgamma(1.051266, 0.5126562) # mode = 0.1, sd = 2
+  
+  # fit for learning curves
+  for(s in 1:8){
+    b[s] ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
+    c[s] ~ dgamma(1.051266, 0.5126562) # mode = 0.1, sd = 2
+    offset[s] ~ dcat(offset.prior)
+  }
+  
+  for(t in 1:72){
+    offset.prior[t] <- 1/72
+  }
+  
+  b.pseudo ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
+  c.pseudo ~ dgamma(4.828427, 5.828427) # mode = 1, sd = 0.5
+ 
+  # noise around the rt measurements
+  sd.rt ~ dgamma(sd.rt.sh, sd.rt.ra)
+  sd.rt.sh <- 1 + sd.rt.mode * sd.rt.ra
+  sd.rt.ra <- (sd.rt.mode + sqrt(sd.rt.mode^2 + 4*sd.rt.sd^2)) / (2*sd.rt.sd^2)
+  sd.rt.mode <- 200
+  sd.rt.sd <- 500
+  
+}

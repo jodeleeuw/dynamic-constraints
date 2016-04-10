@@ -1,7 +1,7 @@
 # analysis options
 # subset.data - TRUE to run the JAGS model on only some subjects for faster MCMC sampling during development
 # subset.amount - # of subjects to include if subset.data = T
-subset.data <- F
+subset.data <- T
 subset.amount <- 15
 
 # libraries
@@ -51,11 +51,10 @@ parameters <- c(
   'a.adapt.group','a.adapt.group.sd',
   'b.adapt.group.mode','b.adapt.group.concentration',
   'c.adapt.group','c.adapt.group.sd',
-  'item.difference', 'item.difference.group', 'item.difference.group.sd',
   'b.W','c.W','offset.W',
   'b.W.group.mode', 'b.W.group.concentration', 'c.W.group', 'c.W.group.sd',
   'is.learner', 'learner.cond', 'offset.mode', 
   'sd.rt' 
 )
-jags.result.individual <- run.jags('jags-models/individual-level.txt', data=data.model, monitor = parameters, n.chains=4, burnin=10000, sample=50000, thin=10, method='parallel')
+jags.result.individual <- run.jags('jags-models/individual-level.txt', data=data.model, monitor = parameters, n.chains=4, burnin=10000, sample=5000, thin=2, method='parallel')
 save(jags.result.individual, file="data/jags-result-individual.Rdata")

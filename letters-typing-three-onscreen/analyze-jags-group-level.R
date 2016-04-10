@@ -6,14 +6,14 @@ require(ggplot2)
 source('lib/DBDA2E-utilities.R')
 
 # load the data
-load('data/data-summary.Rdata')
+load('data/data-group-level.Rdata')
 load('data/jags-result-group.Rdata')
 
 # effective chain length. goal is >10,000 for params of interest.
-#effectiveSize(jags.result.group)
+effectiveSize(jags.result.group)
 
 # quick visualization of chains
-#plot(jags.result.group)
+plot(jags.result.group)
 
 # plot posterior samples from the model ####
 

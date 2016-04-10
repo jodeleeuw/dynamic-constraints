@@ -13,14 +13,14 @@ data.test$appearanceCount <- rep(as.vector(sapply(1:72, function(x){return(rep(x
 data.test.correct <- subset(data.test, correct==1 & triple_type=='critical')
 data.test.correct$rt <- as.numeric(as.character(data.test.correct$rt))
 data.summary <- ddply(data.test.correct, .(cond, triple_position, appearanceCount), function(s){
-  return(c(meanrt=mean(s$rt)))
+  return(c(rt=mean(s$rt)))
 })
 data.summary$cond <- as.numeric(data.summary$cond)
 data.summary$triple_position <- as.numeric(factor(as.character(data.summary$triple_position)))
 
-colnames(data.summary) <- c("cond", "position", "t", "meanrt")
+colnames(data.summary) <- c("cond", "position", "t", "rt")
 
-save(data.summary, file='data/data-summary.Rdata')
+save(data.summary, file='data/data-group-level.Rdata')
 
 data.model <- as.list(data.summary)
 data.model$ndata <- nrow(data.summary)
@@ -28,10 +28,11 @@ data.model$ndata <- nrow(data.summary)
 # run the model ####
 
 monitor.parameters <- c(
-  'a.base.z','b.base.z','c.base.z', 
-  'a.cond.z', 'b.cond.z', 'c.cond.z',
-  'a.position.z','b.position.z','c.position.z',
-  'a.cond.position.z','b.cond.position.z','c.cond.position.z'
+  'a.cond.position','b.cond.position','c.cond.position',
+  'a.overall.mode','a.overall.sd','b.overall.mode','b.overall.concentration',
+  'c.overall.mode','c.overall.sd',
+  'sd.rt'
 )
-jags.result.group <- run.jags('jags-models/group-level.txt', monitor=monitor.parameters, data=data.model, adapt = 2000, burnin = 30000, n.chains = 3, sample = 10000, thin=1, method='parallel')
+
+jags.result.group <- run.jags('jags-models/group-level.txt', monitor=monitor.parameters, data=data.model, adapt = 5000, burnin = 10000, n.chains = 4, sample = 10500, thin=500, method='parallel')
 save(jags.result.group, file="data/jags-result-group.Rdata")

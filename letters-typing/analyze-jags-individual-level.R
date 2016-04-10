@@ -10,14 +10,14 @@ load('data/jags-result-individual.Rdata')
 load('data/data-for-individual-model.Rdata')
 
 # effective sample size
-effectiveSize(jags.result.individual.power)
+effectiveSize(jags.result.individual)
 
 # count subjects
 n.subjects <- length(unique(data.for.model$subject))
 
 # pick a random set of samples from the posterior
 n.samples <- 25
-jags.posterior.matrix <- as.matrix(as.mcmc.list(jags.result.individual.power),chains=T)
+jags.posterior.matrix <- as.matrix(as.mcmc.list(jags.result.individual),chains=T)
 data.posterior.samples <- jags.posterior.matrix[sample(nrow(jags.posterior.matrix), size=n.samples, replace=FALSE),]
 
 # base data frame for computing predicted outcomes
@@ -84,21 +84,20 @@ ggplot(subject.p.learner, aes(x=subject, y=p))+
 
 # function to generate predicted mean rt from condition, position, and time
 model.prediction <- function(row, subject, t, p){
-  a <- row[paste0('a.adapt[',subject,']')]
+  a.N <- row[paste0('a.adapt[',subject,',1]')]
+  a.W <- row[paste0('a.adapt[',subject,',2]')]
   b <- row[paste0('b.adapt[',subject,']')]
   c <- row[paste0('c.adapt[',subject,']')]
-  item.difference <- row[paste0('item.difference[',subject,']')]
+  islearner <- row[paste0('is.learner[',subject,']')]
   offset.W <- row[paste0('offset.W[',subject,']')]
   b.W <- row[paste0('b.W[',subject,']')]
   c.W <- row[paste0('c.W[',subject,']')]
   
-  
-  adapt <- (a * (1 + b*(t^-c - 1)))
-  N <- adapt + item.difference/2
-  if( t < offset.W) {
-    W <- adapt - item.difference/2
+  N <- (a.N * (1 + b*(t^-c - 1)))
+  if( t < offset.W || islearner == 2) {
+    W <- (a.W * (1 + b*(t^-c - 1)))
   } else {
-    W <- adapt * (1 + b.W*((t-offset.W+1)^-c.W - 1)) - item.difference/2
+    W <- (a.W * (1 + b*(t^-c - 1))) * (1 + b.W*((t-offset.W+1)^-c.W - 1))
   }
   
   if(p=="rt.W"){
