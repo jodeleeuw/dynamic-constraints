@@ -22,7 +22,7 @@ var PARSER = (function(){
     logging: true
   };
 
-  module.setup = function(input, params) {
+  module.setup = function(input, params, lexicon_seed) {
 
     // parse input into atomic items
     input_vector = parse_input_items(input);
@@ -31,6 +31,11 @@ var PARSER = (function(){
     lexicon = [];
     current_step = 0;
     last_percept_length = 0;
+    
+     // seed lexicon
+    if(typeof lexicon_seed !== 'undefined'){
+      lexicon = lexicon_seed;
+    }
 
     // merge parameters into default params
     for(var param in params){

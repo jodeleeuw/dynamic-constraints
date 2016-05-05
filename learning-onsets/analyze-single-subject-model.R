@@ -4,7 +4,9 @@ library(coda)
 
 which.subjects <- c(1)
 
-load('data/jags-result-single-subject-1.Rdata')
+load('data/jags-result-single-subject-3.Rdata')
+effectiveSize(jags.result.single.subject)
+plot(jags.result.single.subject)
 m <- as.matrix(as.mcmc.list(jags.result.single.subject),chains=T)
 dim(m)
 

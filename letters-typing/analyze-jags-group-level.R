@@ -1,8 +1,9 @@
 # load required libraries
 require(plyr)
-require(runjags)
 require(coda)
 require(ggplot2)
+library(tidyr)
+library(emdbook)
 source('lib/DBDA2E-utilities.R')
 
 # load the data
@@ -10,23 +11,24 @@ load('data/data-summary.Rdata')
 load('data/jags-result-group.Rdata')
 
 # effective chain length. goal is >10,000 for params of interest.
-effectiveSize(jags.result.group)
+#effectiveSize(jags.result.group)
+#gelman.diag(jags.result.group)
 
 # quick visualization of chains
-plot(jags.result.group)
+#plot(jags.result.group)
 
 # plot posterior samples from the model ####
 
 # pick a random set of samples from the posterior
-n.samples <- 250
+n.samples <- 100
 jags.posterior.matrix <- as.matrix(as.mcmc.list(jags.result.group),chains=T)
 data.posterior.samples <- jags.posterior.matrix[sample(nrow(jags.posterior.matrix), size=n.samples, replace=FALSE),]
 
 # function to generate predicted mean rt from condition, position, and time
 model.prediction <- function(row, cond, position, t){
-  a <- row['a.base.z'] + row[paste0('a.cond.z[',cond,']')] + row[paste0('a.position.z[',position,']')] + row[paste0('a.cond.position.z[',cond,',',position,']')]
-  b <- row['b.base.z'] + row[paste0('b.cond.z[',cond,']')] + row[paste0('b.position.z[',position,']')] + row[paste0('b.cond.position.z[',cond,',',position,']')]
-  c <- row['c.base.z'] + row[paste0('c.cond.z[',cond,']')] + row[paste0('c.position.z[',position,']')] + row[paste0('c.cond.position.z[',cond,',',position,']')]
+  a <- row[paste0('a.cond.position[',cond,',',position,']')]
+  b <- row[paste0('b.cond.position[',cond,',',position,']')]
+  c <- row[paste0('c.cond.position[',cond,',',position,']')]
   return( a * (1 + b*(t^(-c) - 1)))
 }
 
@@ -52,43 +54,41 @@ data.posterior.overlay$cond <- factor(data.posterior.overlay$cond, levels=c(1,3,
 
 # plot data with posterior samples ####
 ggplot(data.summary, aes(x=t,y=rt,colour=cond)) +
-  geom_point(alpha = 0.8)+
+  geom_point(alpha = 1.0)+
   geom_line(data=data.posterior.overlay, aes(y=y, group=interaction(i, cond)), alpha=0.1)+
   facet_grid(.~position, labeller = labeller(position=c("1"="N", "2"="I", "3"="W")))+
   labs(title="Response times to N / I / W", x="\nNumber of times the letter has appeared in the sequence",y="RT (ms)\n")+
-  scale_colour_hue(name="Context", labels=c("Three Known Words","Three Unknown Words", "Scrambled"))+
+  scale_colour_hue(name="Context", labels=c("Known Words","Novel Words", "Scrambled"))+
   theme_minimal(base_size=18)
 
-# plotting posteriors with HDIs ####
-# layout(matrix(1:3,nrow=1))
-# plotPost(jags.posterior.matrix[,'a.base.z'],xlab="Baseline - a")
-# plotPost(jags.posterior.matrix[,'b.base.z'],xlab="Baseline - b")
-# plotPost(jags.posterior.matrix[,'c.base.z'],xlab="Baseline - c")
-# 
-# layout(matrix(1:9,nrow=3,byrow=T))
-# plotPost(jags.posterior.matrix[,'a.cond.z[1]'],xlab="Condition 1 deflection - a")
-# plotPost(jags.posterior.matrix[,'a.cond.z[2]'],xlab="Condition 2 deflection - a")
-# plotPost(jags.posterior.matrix[,'a.cond.z[3]'],xlab="Condition 3 deflection - a")
-# 
-# plotPost(jags.posterior.matrix[,'b.cond.z[1]'],xlab="Condition 1 deflection - b")
-# plotPost(jags.posterior.matrix[,'b.cond.z[2]'],xlab="Condition 2 deflection - b")
-# plotPost(jags.posterior.matrix[,'b.cond.z[3]'],xlab="Condition 3 deflection - b")
-# 
-# plotPost(jags.posterior.matrix[,'c.cond.z[1]'],xlab="Condition 1 deflection - c")
-# plotPost(jags.posterior.matrix[,'c.cond.z[2]'],xlab="Condition 2 deflection - c")
-# plotPost(jags.posterior.matrix[,'c.cond.z[3]'],xlab="Condition 3 deflection - c")
-# 
-# layout(matrix(1:9,nrow=3,byrow=T))
-# plotPost(jags.posterior.matrix[,'a.position.z[1]'],xlab="Position 1 deflection - a")
-# plotPost(jags.posterior.matrix[,'a.position.z[2]'],xlab="Position 2 deflection - a")
-# plotPost(jags.posterior.matrix[,'a.position.z[3]'],xlab="Position 3 deflection - a")
-# 
-# plotPost(jags.posterior.matrix[,'b.position.z[1]'],xlab="Position 1 deflection - b")
-# plotPost(jags.posterior.matrix[,'b.position.z[2]'],xlab="Position 2 deflection - b")
-# plotPost(jags.posterior.matrix[,'b.position.z[3]'],xlab="Position 3 deflection - b")
-# 
-# plotPost(jags.posterior.matrix[,'c.position.z[1]'],xlab="Position 1 deflection - c")
-# plotPost(jags.posterior.matrix[,'c.position.z[2]'],xlab="Position 2 deflection - c")
-# plotPost(jags.posterior.matrix[,'c.position.z[3]'],xlab="Position 3 deflection - c")
+# plotting b/c join density for each position
 
-                
+jags.posterior.df <- as.data.frame(jags.posterior.matrix)
+jags.posterior.df$CHAIN <- NULL
+jags.posterior.df$a.overall.mode <- NULL
+jags.posterior.df$a.overall.sd <- NULL
+jags.posterior.df$b.overall.mode <- NULL
+jags.posterior.df$b.overall.concentration <- NULL
+jags.posterior.df$c.overall.sd <- NULL
+jags.posterior.df$c.overall.mode <- NULL
+jags.posterior.df$sd.rt <- NULL
+jags.posterior.df$sample <- 1:nrow(jags.posterior.df)
+
+jags.posterior.tidy <- jags.posterior.df %>% gather(key, value, -sample) %>% separate(key, c('parameter','cp'), sep=1) %>% separate(cp, c('cond', 'position'), sep=-3)
+jags.posterior.tidy$cond <- gsub("[^0-9]","",jags.posterior.tidy$cond)
+jags.posterior.tidy$position <- gsub("[^0-9]","",jags.posterior.tidy$position)
+jags.posterior.tidy <- jags.posterior.tidy %>% spread(parameter, value)
+
+hdr.95 <- ddply(subset(jags.posterior.tidy,T,c('position','cond','b','c')), .(position, cond), function(s){
+  contour.lines <- as.data.frame(HPDregionplot(mcmc(data.matrix(s[,c('b','c')])), prob=0.95))
+  return(data.frame(position=rep(s$position[1],nrow(contour.lines)), cond=rep(s$cond[1],nrow(contour.lines)),x=contour.lines$x, y=contour.lines$y))
+})
+
+hdr.95$cond <- factor(hdr.95$cond, levels=c(1,3,2))
+
+ggplot(hdr.95, aes(x=x, y=y, fill=cond)) +
+  geom_polygon(alpha=0.6)+
+  facet_grid(.~position, labeller = labeller(position=c("1"="N", "2"="I", "3"="W")))+
+  labs(title="Parameter estimates for N / I / W", x="\nb",y="c\n")+
+  scale_fill_hue(name="Context",labels=c("Known Words","Novel Words", "Scrambled"))+
+  theme_minimal(base_size = 18)

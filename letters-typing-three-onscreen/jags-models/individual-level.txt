@@ -4,7 +4,7 @@ model {
   
     #### base adaptation curve ####
 
-    mu.adapt[i] <- a.adapt[subject[i]] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))
+    #mu.adapt[i] <- a.adapt[subject[i]] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))
   
     #### curve for N character (unpredictable)
   
@@ -12,7 +12,7 @@ model {
     N.log.mu[i] <- log( N.mu[i]^2 / sqrt(sd.rt^2 + N.mu[i]^2) )
     sd.log.N.rt[i] <- 1 / sqrt( log( 1 + (sd.rt^2 / N.mu[i]^2) ))^2
     
-    N.mu[i] <- mu.adapt[i] + item.difference[subject[i]] / 2
+    N.mu[i] <- a.adapt[subject[i],1] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))
     
     #### curve for W character (predictable) ####
     
@@ -21,8 +21,8 @@ model {
     sd.log.W.rt[i] <- 1 / sqrt( log( 1 + (sd.rt^2 / W.mu[i]^2) ))^2
   
     W.mu[i] <- W.mu.switch[i, W.post.offset[i]]
-    W.mu.switch[i,1] <- mu.adapt[i] - (item.difference[subject[i]] / 2)
-    W.mu.switch[i,2] <- mu.adapt[i] * (1 + b.W[subject[i]] * (( t[i] + 1 - offset.W[subject[i]] ) ^ -c.W[subject[i]] - 1)) - (item.difference[subject[i]] / 2)
+    W.mu.switch[i,1] <- a.adapt[subject[i],2] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))
+    W.mu.switch[i,2] <- (a.adapt[subject[i],2] * (1 + b.adapt[subject[i]] * (t[i] ^ -c.adapt[subject[i]] - 1))) * (1 + b.W[subject[i]] * (( t[i] + 1 - offset.W[subject[i]] ) ^ -c.W[subject[i]] - 1))
     
     W.post.offset[i] <- step(t[i] - offset.W[subject[i]]) + 1 # this param = 1 when t < offset, = 2 when t >= offset
     
@@ -30,11 +30,9 @@ model {
   
   for(s in 1:nsubjects){
   
-    # item level effect for N v. W
-    item.difference[s] ~ dnorm(item.difference.group, 1 / item.difference.group.sd ^ 2)
-  
     # fit for N curve
-    a.adapt[s] ~ dnorm(a.adapt.group, 1 / a.adapt.group.sd ^ 2)T(0.01,2000)
+    a.adapt[s,1] ~ dnorm(a.adapt.group, 1 / a.adapt.group.sd ^ 2)T(0.01,2000)
+    a.adapt[s,2] ~ dnorm(a.adapt.group, 1 / a.adapt.group.sd ^ 2)T(0.01,2000)
     b.adapt[s] ~ dbeta(b.adapt.a, b.adapt.b )
     c.adapt[s] ~ dgamma(c.adapt.sh, c.adapt.ra)
     
@@ -80,9 +78,6 @@ model {
   
   c.adapt.sh <- 1 + c.adapt.group * c.adapt.ra
   c.adapt.ra <- (c.adapt.group + sqrt(c.adapt.group^2 + 4* c.adapt.group.sd^2)) / (2* c.adapt.group.sd^2)
-  
-  item.difference.group ~ dnorm(0, 1 / 200^2)
-  item.difference.group.sd ~ dgamma(1.640388, 0.006403882) # mode = 100, sd = 200
   
   # group level estimates for learners
   b.W.group.mode ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5

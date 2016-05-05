@@ -10,8 +10,9 @@ model {
     mu.switch[i,1] <- (a.adapt[symbol[i]] * (1 + b.adapt * (t[i] ^ -c.adapt - 1)))
     mu.switch[i,2] <- (a.adapt[symbol[i]] * (1 + b.adapt * (t[i] ^ -c.adapt - 1))) * (1 + b.i[i] * (( t[i] + 1 - offset[symbol[i]] ) ^ -c.i[i] - 1))
     
-    # this param = 1 when t < offset OR when symbol[i] is unpredictable, = 2 when t >= offset && symbol is predictable
-    which.model[i] <- ifelse(equals(symbol.type[i], 1), 1, step(t[i] - offset[symbol[i]]) + 1) 
+    # this param = 1 when t < offset OR when symbol[i] is unpredictable OR when subject is not a learner
+    #            = 2 when t >= offset && symbol is predictable
+    which.model[i] <- ifelse(equals(symbol.type[i], 1) || equals(is.learner, 0), 1, step(t[i] - offset[symbol[i]]) + 1) 
     
     # pseudopriors when t < offset
     b.i[i] <- equals(which.model[i], 1)*b.pseudo + equals(which.model[i], 2)*b[symbol[i]]
@@ -20,14 +21,14 @@ model {
   }
   
   # fit for adaptation curves
-  for(s in 1:8){
+  for(s in 1:12){
     a.adapt[s] ~ dnorm(1000, 1 / 250^2)T(0,2000)
   }
   b.adapt ~ dbeta(1.75, 3.25)
   c.adapt ~ dgamma(1.051266, 0.5126562) # mode = 0.1, sd = 2
   
   # fit for learning curves
-  for(s in 1:8){
+  for(s in 1:12){
     b[s] ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
     c[s] ~ dgamma(1.051266, 0.5126562) # mode = 0.1, sd = 2
     offset[s] ~ dcat(offset.prior)
@@ -39,6 +40,9 @@ model {
   
   b.pseudo ~ dbeta(1.75, 3.25) # mode = 0.25, concentration = 5
   c.pseudo ~ dgamma(4.828427, 5.828427) # mode = 1, sd = 0.5
+  
+  # is learning happening at all? (shrinkage on learning curves)
+  is.learner ~ dbern( 0.5 )
  
   # noise around the rt measurements
   sd.rt ~ dgamma(sd.rt.sh, sd.rt.ra)

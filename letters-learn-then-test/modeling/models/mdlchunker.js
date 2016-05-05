@@ -35,7 +35,7 @@ MDLChunker = (function(){
       parameters[param] = params[param];
     }
 
-  }
+  };
 
   module.step = function(){
 
@@ -88,7 +88,7 @@ MDLChunker = (function(){
     while(input_vector.length > 0){
       module.step();
     }
-  }
+  };
 
   module.getLexicon = function() {
     //var sortedLexicon = lexicon.sort(function(a,b){ return a.codeLength - b.codeLength; });
@@ -100,25 +100,25 @@ MDLChunker = (function(){
       });
     }
     return JSON.parse(JSON.stringify(t));
-  }
+  };
 
   module.getInput = function() {
     return JSON.stringify(input_vector);
-  }
+  };
 
   module.getMemory = function() {
     return JSON.stringify(memory);
-  }
+  };
 
   module.getFactorizedMemory = function() {
     return JSON.stringify(factorize(memory));
-  }
+  };
   
   module.getCodeLengthForString = function(string){
     var vector = string.split("");
     var v = factorize(vector);
     return get_total_codelength(v);
-  }
+  };
 
   function parse_input_items(input, split_char){
 

@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -l nodes=4:ppn=32
+#PBS -l walltime=48:00:00
+#PBS -q cpu
+#PBS -N individual-typing-pcp
+
+module load pcp/2008
+
+cd /N/u/jodeleeu/BigRed2/letters-typing/parallel-cluster
+
+aprun -n 128 pcp individual-model-job-list-full.txt

@@ -53,8 +53,9 @@ run_PARSER <- function(model, seq, condition) {
   ct$eval("PARSER.run()")
   
   #lexicon <- fromJSON(ct$eval("JSON.stringify(PARSER.getLexicon())"))
-  target_weight <- as.numeric(ct$eval("PARSER.getWordStrength('ABC')"))
-  foil_weight <- as.numeric(ct$eval("PARSER.getWordStrength('DHL')"))
+  base_weight <- as.numeric(ct$eval("PARSER.getWordStrength('A')"))+as.numeric(ct$eval("PARSER.getWordStrength('B')"))+as.numeric(ct$eval("PARSER.getWordStrength('C')"))
+  target_weight <- as.numeric(ct$eval("PARSER.getWordStrength('ABC')")) + base_weight
+  foil_weight <- base_weight
   # filter weights below 1.0
   if(target_weight < 1.0){ target_weight <- 0 }
   if(foil_weight < 1.0){ foil_weight <- 0 }
@@ -62,6 +63,10 @@ run_PARSER <- function(model, seq, condition) {
 }
 
 run_MDLChunker <- function(model, seq, condition) {
+  
+  if(condition=='seeded'){
+    seq <- paste0(seed_sequence(100), seq)
+  }
   
   ct <- new_context();
   ct$source(model)
@@ -74,38 +79,45 @@ run_MDLChunker <- function(model, seq, condition) {
   
   #lexicon <- fromJSON(ct$eval("JSON.stringify(MDLChunker.getLexicon())"))
   target_weight <- as.numeric(ct$eval("MDLChunker.getCodeLengthForString('ABC')"))
-  foil_weight <- as.numeric(ct$eval("MDLChunker.getCodeLengthForString('DHL')"))
+  foil_weight <- as.numeric(ct$eval("MDLChunker.getCodeLengthForString('ACB')")) +
+    as.numeric(ct$eval("MDLChunker.getCodeLengthForString('BAC')")) +
+    as.numeric(ct$eval("MDLChunker.getCodeLengthForString('BCA')")) +
+    as.numeric(ct$eval("MDLChunker.getCodeLengthForString('CBA')")) +
+    as.numeric(ct$eval("MDLChunker.getCodeLengthForString('CAB')"))
+  foil_weight <- foil_weight / 5
+  #memory <- fromJSON(ct$eval("MDLChunker.getMemory()"))
+  #print(memory)
   return(list(model="MDLChunker",condition=condition,target=target_weight, foil=foil_weight))
   
 }
 
-run_TRACX <- function(model, seq, condition) {
-  
- # if(condition=='seeded'){
- #   seq.prepend <- 
- # }
-  
-  ct <- new_context();
-  ct$source('modeling/models/TRACX-dependencies/sylvester.js')
-  ct$source('modeling/models/TRACX-dependencies/seedrandom-min.js')
-  ct$source(model)
-  ct$eval(paste0("TRACX.setTrainingData('",seq,"');"))
-  ct$eval('TRACX.getInputEncodings();')
-  ct$eval('TRACX.setTestData({Words:"ABC", PartWords: "", NonWords: "DHL"})')
-  ct$eval('TRACX.setSingleParameter("randomSeed","")')
-  ct$eval('TRACX.reset()')
-  lexicon <- fromJSON(ct$eval('JSON.stringify(TRACX.runFullSimulation(function(i,m){}))'))
-  target_weight <- as.numeric(lexicon$Words$mean)
-  foil_weight <- as.numeric(lexicon$NonWords$mean)
-  return(list(model="TRACX",condition=condition,target=target_weight, foil=foil_weight))
-}
+# run_TRACX <- function(model, seq, condition) {
+#   
+#  # if(condition=='seeded'){
+#  #   seq.prepend <- 
+#  # }
+#   
+#   ct <- new_context();
+#   ct$source('modeling/models/TRACX-dependencies/sylvester.js')
+#   ct$source('modeling/models/TRACX-dependencies/seedrandom-min.js')
+#   ct$source(model)
+#   ct$eval(paste0("TRACX.setTrainingData('",seq,"');"))
+#   ct$eval('TRACX.getInputEncodings();')
+#   ct$eval('TRACX.setTestData({Words:"ABC", PartWords: "", NonWords: "DHL"})')
+#   ct$eval('TRACX.setSingleParameter("randomSeed","")')
+#   ct$eval('TRACX.reset()')
+#   lexicon <- fromJSON(ct$eval('JSON.stringify(TRACX.runFullSimulation(function(i,m){}))'))
+#   target_weight <- as.numeric(lexicon$Words$mean)
+#   foil_weight <- as.numeric(lexicon$NonWords$mean)
+#   return(list(model="TRACX",condition=condition,target=target_weight, foil=foil_weight))
+# }
 
 
 #### run all models ####
 
 # vectors to store data
 runs <- list()
-length(runs) <- reps_per_condition * 1 * 2 # 1 = number of models,  2 = number of conditions
+length(runs) <- reps_per_condition * 2 * 2 # 1 = number of models,  2 = number of conditions
 counter <- 1
 
 # run models
@@ -118,6 +130,10 @@ for(i in 1:reps_per_condition){
   runs[[counter]] <- run_PARSER('modeling/models/parser.js',four_seq, 'unseeded')
   counter <- counter + 1
   runs[[counter]] <- run_PARSER('modeling/models/parser.js',four_seq, 'seeded')
+  counter <- counter + 1
+  runs[[counter]] <- run_MDLChunker('modeling/models/mdlchunker.js', four_seq, 'unseeded')
+  counter <- counter + 1
+  runs[[counter]] <- run_MDLChunker('modeling/models/mdlchunker.js', four_seq, 'seeded')
   counter <- counter + 1
  
 }

@@ -42,8 +42,8 @@ data.jags$ndata <- nrow(data.model.subset)
 save(data.model.subset, file=paste0("data/data-for-jags-single-subject-",which.subject,".Rdata"))
 
 # run the jags model ####
-parameters <- c('a.adapt','b.adapt','c.adapt','b','c','offset','b.pseudo','c.pseudo','sd.rt')
-jags.result.single.subject <- run.jags('jags-models/single-subject-model.txt',data=data.jags, monitor=parameters, adapt=1000,burnin=1000,sample=10000,n.chains=4)
+parameters <- c('a.adapt','b.adapt','c.adapt','b','c','offset','b.pseudo','c.pseudo','sd.rt','is.learner','p.learner')
+jags.result.single.subject <- run.jags('jags-models/single-subject-model.txt',data=data.jags, monitor=parameters, adapt=1000,burnin=1000,sample=1000,n.chains=4, method='parallel')
 save(jags.result.single.subject, file=paste0("data/jags-result-single-subject-",which.subject,".Rdata"))
 
 

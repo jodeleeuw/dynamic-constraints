@@ -22,8 +22,8 @@ four_triple_sequence <- function(reps){
 }
 
 seed_sequence <- function(reps){
-  triples <- c('DEF','GHI','JKL')
-  s <- sample(1:3, reps*3, replace=T)
+  triples <- c('DEF','GHI','JKL','A','B','C')
+  s <- sample(1:6, reps*3, replace=T)
   s2 <- sapply(s, function(i){ return(triples[i])})
   final <- paste0(s2, collapse="")
   return(final)
