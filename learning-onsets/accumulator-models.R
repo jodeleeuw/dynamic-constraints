@@ -176,6 +176,26 @@ state.probability <- function(target, p){
   
 }
 
+# version 2...
+state.probability.2 <- function(target, p){
+  
+  p.rle <- rle(p)
+  
+  for(i in 1:length(p.rle$lengths)){
+    len <- p.rle$lengths[[i]]
+    val <- p.rle$values[[i]]
+    l <- dbinom(0:target, target*len, val)
+    if(exists('state')){
+      state <- combine.distributions(state, l)
+    } else {
+      state <- l
+    }
+  }
+  state <- state[1:target] / sum(state[1:target])
+  
+  return(state)
+}
+
 log.likelihood <- function(t, p.success=0.05, end=100, boost=1){
   
   learning.trials <- c(t[1], diff(t))
@@ -221,25 +241,25 @@ log.likelihood(c(18,18),boost=0)
 # exp(log.likelihood(22, boost=0)$total)
 # 
 # # 2 racers ####
-# n.sims.2 <- 250000
-# if(run.simulations){
-#   sim.result.2 <- t(replicate(n.sims.2, {
-#     return(dependent.race(2, boost = 0))
-#   }))
-# }
-# 
-# hist(sim.result.2[,1], xlim=c(10,30))
-# points(10:30, n.sims.2*sapply(10:30, function(x){return(exp(log.likelihood(c(x,x+5), boost=0)$individual[[1]]))}))
-# 
-# sim.conditional <- sim.result.2[sim.result.2[,1]==18,2]
-# hist(sim.conditional, xlim=c(17,30), breaks=17:32)
-# points(18:30, length(sim.conditional)*sapply(18:30, function(x){return(exp(log.likelihood(c(18,x), boost=0)$individual[[2]]))}))
-# 
-# nrow(sim.result.2[sim.result.2[,1]==19 & sim.result.2[,2]==24,]) / n.sims.2
-# exp(log.likelihood(c(19,24), boost=0)$total)
+n.sims.2 <- 250000
+if(run.simulations){
+  sim.result.2 <- t(replicate(n.sims.2, {
+    return(dependent.race(2, boost = 0))
+  }))
+}
+
+hist(sim.result.2[,1], xlim=c(10,30))
+points(10:30, n.sims.2*sapply(10:30, function(x){return(exp(log.likelihood(c(x,x+5), boost=0)$individual[[1]]))}))
+
+sim.conditional <- sim.result.2[sim.result.2[,1]==18,2]
+hist(sim.conditional, xlim=c(17,30), breaks=17:32)
+points(18:30, length(sim.conditional)*sapply(18:30, function(x){return(exp(log.likelihood(c(18,x), boost=0)$individual[[2]]))}))
+
+nrow(sim.result.2[sim.result.2[,1]==19 & sim.result.2[,2]==24,]) / n.sims.2
+exp(log.likelihood(c(19,24), boost=0)$total)
 
 # accumulator states
- n.sims.3 <- 100000
+ n.sims.3 <- 1000000
  sim.result.3 <- replicate(n.sims.3, {
    return(dependent.race.accumulator.states(2, boost=0))
  })
@@ -266,7 +286,8 @@ log.likelihood(c(18,18),boost=0)
    return(result)
  }
  
- x <- select.set(sim.result.3, c(), 100, c(1,2), 5)
- hist(x, breaks=1:100)
- points(10:40, length(x)*dbinom(10:40, 100*5, 0.05))
+ x <- select.set(sim.result.3, c(18), 100, 2, 17)
+ hist(x, breaks=0:99)
+ points(0:99, length(x)*state.probability.2(100, rep(0.05,17)))
+ points(0:99, length(x)*dbinom(0:99, 100*17, 0.05))
 
