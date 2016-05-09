@@ -27,11 +27,13 @@ dependent.race.accumulator.states <- function(n, p.success=0.05, end=100, boost=
   accumulators <- rep(0,n)
   finish.times <- rep(Inf,n)
   finished.count <- 0
+  state.matrix <- accumulators
   t <- 0
   while(finished.count < n){
     t <- t + 1
     p <- 1 - (1 - p.success)^(1 + boost * finished.count)
     accumulators <- accumulators + rbinom(n, end, p)
+    state.matrix <- rbind(state.matrix, accumulators)
     finish.times <- mapply(function(a,f){
       if(a >= end && t < f){
         return(t)
@@ -41,7 +43,14 @@ dependent.race.accumulator.states <- function(n, p.success=0.05, end=100, boost=
     }, accumulators, finish.times)
     finished.count <- sum(finish.times < Inf)
   }
-  return(sort(finish.times))
+  o <- order(finish.times)
+  m.out <- state.matrix
+  for(i in 1:length(finish.times)){
+    m.out[,i] <- state.matrix[,o[i]]
+  }
+  row.names(m.out) <- NULL
+  m.out <- m.out[-1,]
+  return(m.out)
 }
 
 ## likelihood function ####
@@ -205,28 +214,59 @@ log.likelihood(c(18,18),boost=0)
 #   })
 # }
 # 
- hist(sim.result, xlim=c(10,30))
- points(10:30, 50000*sapply(10:30, function(x){return(exp(log.likelihood(x, boost=0)$total))}))
+# hist(sim.result, xlim=c(10,30))
+# points(10:30, 50000*sapply(10:30, function(x){return(exp(log.likelihood(x, boost=0)$total))}))
 # 
 # sum(sim.result==22) / 50000
 # exp(log.likelihood(22, boost=0)$total)
 # 
 # # 2 racers ####
- n.sims.2 <- 250000
- if(run.simulations){
-   sim.result.2 <- t(replicate(n.sims.2, {
-     return(dependent.race(2, boost = 0))
-   }))
- }
+# n.sims.2 <- 250000
+# if(run.simulations){
+#   sim.result.2 <- t(replicate(n.sims.2, {
+#     return(dependent.race(2, boost = 0))
+#   }))
+# }
 # 
- hist(sim.result.2[,1], xlim=c(10,30))
- points(10:30, n.sims.2*sapply(10:30, function(x){return(exp(log.likelihood(c(x,x+5), boost=0)$individual[[1]]))}))
+# hist(sim.result.2[,1], xlim=c(10,30))
+# points(10:30, n.sims.2*sapply(10:30, function(x){return(exp(log.likelihood(c(x,x+5), boost=0)$individual[[1]]))}))
 # 
- sim.conditional <- sim.result.2[sim.result.2[,1]==18,2]
- hist(sim.conditional, xlim=c(17,30), breaks=17:32)
- points(18:30, length(sim.conditional)*sapply(18:30, function(x){return(exp(log.likelihood(c(18,x), boost=0)$individual[[2]]))}))
+# sim.conditional <- sim.result.2[sim.result.2[,1]==18,2]
+# hist(sim.conditional, xlim=c(17,30), breaks=17:32)
+# points(18:30, length(sim.conditional)*sapply(18:30, function(x){return(exp(log.likelihood(c(18,x), boost=0)$individual[[2]]))}))
 # 
- nrow(sim.result.2[sim.result.2[,1]==19 & sim.result.2[,2]==24,]) / n.sims.2
- exp(log.likelihood(c(19,24), boost=0)$total)
+# nrow(sim.result.2[sim.result.2[,1]==19 & sim.result.2[,2]==24,]) / n.sims.2
+# exp(log.likelihood(c(19,24), boost=0)$total)
 
+# accumulator states
+ n.sims.3 <- 100000
+ sim.result.3 <- replicate(n.sims.3, {
+   return(dependent.race.accumulator.states(2, boost=0))
+ })
+ 
+ select.set <- function(set, finish.times, target, which.acc, t){
+   result <- numeric()
+   for(i in 1:length(set)){
+     is.match <- T
+     if(length(finish.times)>0){
+       for(j in 1:length(finish.times)){
+         f <- min(which(set[[i]][,j] >= target))
+         if(f!=finish.times[j]){
+           is.match <- F
+         }
+       }
+     }
+     if(is.match){
+       acc <- set[[i]][,which.acc]
+       if(length(acc) >= t){
+         result <- c(result, set[[i]][t, which.acc])
+       }
+     }
+   }
+   return(result)
+ }
+ 
+ x <- select.set(sim.result.3, c(), 100, c(1,2), 5)
+ hist(x, breaks=1:100)
+ points(10:40, length(x)*dbinom(10:40, 100*5, 0.05))
 
