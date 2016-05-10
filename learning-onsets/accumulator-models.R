@@ -53,6 +53,39 @@ dependent.race.accumulator.states <- function(n, p.success=0.05, end=100, boost=
   return(m.out)
 }
 
+## empirical likelihood ####
+
+empirical.likelihood <- function(finish.times, p.success=0.05, end=100, boost=1){
+  sim.result <- replicate(10000, { return(single.race.stop.on.violation(finish.times, p.success,end,boost))})
+  return(sum(sim.result)/length(sim.result))
+}
+
+single.race.stop.on.violation <- function(f.times, p.success=0.05, end=100, boost=1){
+  n <- length(f.times)
+  accumulators <- rep(0,n)
+  finish.times <- rep(Inf,n)
+  finished.count <- 0
+  t <- 0
+  while(finished.count < n){
+    t <- t + 1
+    p <- 1 - (1 - p.success)^(1 + boost * finished.count)
+    accumulators <- accumulators + rbinom(n, end, p)
+    finish.times <- mapply(function(a,f){
+      if(a >= end && t < f){
+        return(t)
+      } else {
+        return(f)
+      }
+    }, accumulators, finish.times)
+    finished.count <- sum(finish.times < Inf)
+    f <- sort(finish.times[finish.times != Inf])
+    if(!all(f == f.times[1:length(f)])){
+      return(F)
+    }
+  }
+  return(T)
+}
+
 ## likelihood function ####
 
 # explicitly combine two probability distributions, expecting a vector of 
