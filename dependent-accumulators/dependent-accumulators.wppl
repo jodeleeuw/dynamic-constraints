@@ -32,8 +32,8 @@ var update_finish_times = function(finish, state, t, end){
 
 var accumulators = function(n, p, end, boost, finish, state, t){
   if(typeof state == 'undefined'){
-    var newState = init(n,0);
-    var newFinish = init(n,-1);
+    var newState = init(n, 0);
+    var newFinish = init(n, -1);
     return accumulators(n, p, end, boost, newFinish, newState, 1);
   } else {
     var finished_count = count_complete(finish);
@@ -49,7 +49,9 @@ var accumulators = function(n, p, end, boost, finish, state, t){
 };
 
 var model = function(){
-  return accumulators(2, 0.05, 100, 0);
+  var p = beta(2,20);
+  var end = discrete(init(100,0.01));
+  return accumulators(4, p, end, 0);
 };
 
-Enumerate(model, 1);
+SMC(model, {particles: 1000});
