@@ -1,4 +1,4 @@
-run.simulations <- F
+run.simulations <- T
 
 ## simulate the model
 
@@ -324,3 +324,14 @@ exp(log.likelihood(c(19,24), boost=0)$total)
  points(0:99, length(x)*state.probability.2(100, rep(0.05,17)))
  points(0:99, length(x)*dbinom(0:99, 100*17, 0.05))
 
+ 
+ # scratchpad ####
+ target <- 100
+ p <- 0.05
+ a.1 <- dbinom(0:(target*18), target*18, p)
+ joint <- a.1 %o% a.1
+ image(joint)
+ a.2 <- joint[(row(joint) >= target & col(joint) < target) | (col(joint) >= target & row(joint) < target)]
+  hist(a.2)
+  min(a.2)
+  

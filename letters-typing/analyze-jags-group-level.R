@@ -53,12 +53,13 @@ data.summary$cond <- factor(data.summary$cond, levels=c(1,3,2))
 data.posterior.overlay$cond <- factor(data.posterior.overlay$cond, levels=c(1,3,2))
 
 # plot data with posterior samples ####
-ggplot(data.summary, aes(x=t,y=rt,colour=cond)) +
-  geom_point(alpha = 1.0)+
-  geom_line(data=data.posterior.overlay, aes(y=y, group=interaction(i, cond)), alpha=0.1)+
+ggplot(data.summary, aes(x=t,y=rt,fill=cond,colour=cond)) +
+  geom_line(data=data.posterior.overlay, aes(y=y, group=interaction(i, cond)), alpha=0.05)+
+  geom_point(alpha = 1.0, size=2, shape=21, colour='white')+
   facet_grid(.~position, labeller = labeller(position=c("1"="N", "2"="I", "3"="W")))+
   labs(title="Response times to N / I / W", x="\nNumber of times the letter has appeared in the sequence",y="RT (ms)\n")+
-  scale_colour_hue(name="Context", labels=c("Known Words","Novel Words", "Scrambled"))+
+  scale_fill_hue(name="Context", labels=c("Known Words","Novel Words", "Scrambled"))+
+  scale_colour_hue(guide=F)+
   theme_minimal(base_size=18)
 
 # plotting b/c join density for each position
@@ -89,6 +90,6 @@ hdr.95$cond <- factor(hdr.95$cond, levels=c(1,3,2))
 ggplot(hdr.95, aes(x=x, y=y, fill=cond)) +
   geom_polygon(alpha=0.6)+
   facet_grid(.~position, labeller = labeller(position=c("1"="N", "2"="I", "3"="W")))+
-  labs(title="Parameter estimates for N / I / W", x="\nb",y="c\n")+
+  labs(title="Parameter estimates for N / I / W", x="\n\u03B2",y="\u03B3\n")+
   scale_fill_hue(name="Context",labels=c("Known Words","Novel Words", "Scrambled"))+
-  theme_minimal(base_size = 18)
+  theme_minimal(base_size = 18) + theme(axis.title=element_text(family="Times New Roman", size=24))

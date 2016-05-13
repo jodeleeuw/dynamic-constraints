@@ -1,7 +1,7 @@
 # analysis options
 # subset.data - TRUE to run the JAGS model on only some subjects for faster MCMC sampling during development
 # subset.amount - # of subjects to include if subset.data = T
-subset.data <- T
+subset.data <- F
 subset.amount <- 15
 
 # libraries

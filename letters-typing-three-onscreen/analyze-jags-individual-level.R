@@ -12,40 +12,38 @@ load('data/data-for-individual-model.Rdata')
 # count subjects
 n.subjects <- length(unique(data.for.model$subject))
 
+# subject condition lookup table
+subject.conditions <- ddply(data.for.model, .(subject), function(s){return(c(condition=s$cond[[1]]))})
+
+
 # pick a random set of samples from the posterior
 n.samples <- 25
-jags.posterior.matrix <- as.matrix(as.mcmc.list(jags.result.individual.power),chains=T)
+jags.posterior.matrix <- as.matrix(as.mcmc.list(jags.individual),chains=T)
 data.posterior.samples <- jags.posterior.matrix[sample(nrow(jags.posterior.matrix), size=n.samples, replace=FALSE),]
 
-# base data frame for computing predicted outcomes
-df.base <- expand.grid(subject=1:n.subjects, t=1:72)
+# plot proportion of time model ####
+subject.p.learner <- data.frame(subject=1:n.subjects)
+subject.p.learner$p <- sapply(subject.p.learner$subject, function(s){
+  vector <- jags.posterior.matrix[,paste0('is.learner[',s,']')]
+  return( table(vector)[[1]] / length(vector) )
+})
+subject.p.learner$condition <- factor(sapply(subject.p.learner$subject, function(s){ return(subject.conditions[subject.conditions$subject==s,]$condition)}))
+subject.p.learner <- subject.p.learner[order(subject.p.learner$p, subject.p.learner$condition),]
+subject.p.learner$sortorder <- 1:nrow(subject.p.learner)
+ggplot(subject.p.learner, aes(x=sortorder, y=p, fill=condition))+
+  geom_bar(stat='identity')+
+  labs(x="\nSubject", y="Proportion of samples classified as learner\n")+
+  scale_x_continuous(breaks=seq(from=0,to=275,by=25))+
+  scale_fill_hue(labels=c('Known words', 'Unknown words', 'Scrambled'), name='Context')+
+  theme_minimal(base_size=14)
 
-# generate the secondary learning curves for each subject
-learning.prediction <- function(row, subject, t){
-  offset <- row[paste0('offset.W[',subject,']')]
-  b.W <- row[paste0('b.W[',subject,']')]
-  c.W <- row[paste0('c.W[',subject,']')]
-  if(t < offset) { return(0) }
-  return(-b.W*(t-offset + 1)^-c.W+b.W)
-}
+# n subjects above 50%, 75%
+sum(subject.p.learner$p>=0.5)/nrow(subject.p.learner)
+sum(subject.p.learner$p>=0.75)/nrow(subject.p.learner)
 
-data.learning.curves <- data.frame(subject=numeric(), t=numeric(), y=numeric(), i=numeric())
-for(i in 1:nrow(data.posterior.samples)){
-  r <- data.posterior.samples[i,]
-  new.df <- df.base
-  new.df$y <- mapply(learning.prediction, subject = new.df$subject, t=new.df$t, MoreArgs = list(row=r))
-  new.df$i <- i
-  data.learning.curves <- rbind(data.learning.curves, new.df)
-}
-
-# plot ####
-layout(1) # reset just in case...
-ggplot(data.learning.curves, aes(x=t,y=y,group=i))+
-  geom_line()+
-  facet_wrap(~subject)
 
 # get HDIs for subject-level params of interest ####
-subject.hdi <- expand.grid(subject=1:n.subjects, loc=c('low','high','median'), parameter=c('a.adapt', 'b.adapt','c.adapt', 'item.difference', 'b.W','c.W','offset.W'))
+subject.hdi <- expand.grid(subject=1:n.subjects, loc=c('low','high','median'), parameter=c('b.adapt','c.adapt','b.W','c.W','offset.W'))
 subject.hdi$value <- mapply(function(s,l,p){
   vector <- jags.posterior.matrix[,paste0(p,'[',s,']')]
   # only look at learning curve params when subject is a learner
@@ -59,22 +57,23 @@ subject.hdi$value <- mapply(function(s,l,p){
   if(l=='median') { return(median(vector)) }
 },subject.hdi$subject, subject.hdi$loc, subject.hdi$parameter)
 subject.hdi <- subject.hdi %>% spread('loc','value')
-
+subject.hdi$condition <- factor(sapply(subject.hdi$subject, function(s){ return(subject.conditions[subject.conditions$subject==s,]$condition)}))
+subject.hdi$p.learner <- sapply(subject.hdi$subject, function(s){ return(subject.p.learner[subject.p.learner$subject==s,]$p)})
 # looking at subject level params ####
-ggplot(subject.hdi, aes(x=subject,ymin=low,ymax=high, y=median))+
+hdi.plotting.data <- subset(subject.hdi, p.learner >= 0.75 & parameter%in%c('offset.W','b.W','c.W'))
+hdi.plotting.data$parameter <- factor(as.character(hdi.plotting.data$parameter))
+hdi.plotting.data$parameter <- revalue(hdi.plotting.data$parameter, c('b.W'='\u03B2[learn] ~ "(amount of learning)"','c.W'='\u03B3[learn] ~ "(speed of learning)"','offset.W'='\u03C9 ~ "(onset of learning)"'))
+hdi.plotting.data$order <- rank(hdi.plotting.data$condition, ties.method = 'first')
+ggplot(hdi.plotting.data, aes(x=order,ymin=low,ymax=high, y=median, colour=condition))+
   geom_pointrange()+
-  facet_wrap(~parameter, scales="free_y")
+  facet_wrap(~parameter, scales="free_y",labeller = label_parsed)+
+  labs(y="Parameter value\n",x="")+
+  scale_x_discrete(expand=c(.05,.05))+
+  scale_y_continuous(limits=c(0,NA))+
+  scale_color_hue(labels=c('Known words','Novel words','Scrambled'),name="Context")+
+  theme_minimal(base_size = 14) +
+  theme(strip.text=element_text(family='Times New Roman', size=14))
 
-# plot proportion of time model ####
-subject.p.learner <- data.frame(subject=1:n.subjects)
-subject.p.learner$p <- sapply(subject.p.learner$subject, function(s){
-  vector <- jags.posterior.matrix[,paste0('is.learner[',s,']')]
-  return( table(vector)[[1]] / length(vector) )
-})
-ggplot(subject.p.learner, aes(x=subject, y=p))+
-  geom_bar(stat='identity')+
-  labs(x="\nSubject", y="Proportion of samples classified as learner\n")+
-  theme_minimal(base_size=14)
 
 
 # plotting subject model data ####
