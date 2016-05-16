@@ -48,10 +48,13 @@ var accumulators = function(n, p, end, boost, finish, state, t){
   }
 };
 
+
+
 var model = function(){
   var p = beta(2,20);
   var end = discrete(init(100,0.01));
-  return accumulators(4, p, end, 0);
+  var boost = gamma(1.64, 0.64); // mode ~ 1, sd ~ 2
+  return accumulators(4, p, end, boost);
 };
 
 SMC(model, {particles: 1000});
