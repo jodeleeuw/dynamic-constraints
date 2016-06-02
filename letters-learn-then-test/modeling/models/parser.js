@@ -89,6 +89,10 @@ var PARSER = (function(){
     }
 
   }
+  
+  module.done = function() {
+    return input_vector.length === 0;
+  }
 
   module.getLexicon = function() {
     var sortedLexicon = lexicon.sort(function(a,b){ return b.weight - a.weight; });
