@@ -49,7 +49,7 @@ jags.m <- jags.model('jags-models/single-subject-model.txt', data=data.jags, n.a
 print(paste0('Starting burn-in at ',Sys.time()))
 update(jags.m, n.iter=burnin)
 print(paste0('Starting sampling at ',Sys.time()))
-jags.result.single.subject <- jags.samples(jags.m, parameters, sample, thin = thin)
+jags.result.single.subject <- coda.samples(jags.m, parameters, sample, thin = thin)
 print(paste0('Sampling complete at ',Sys.time()))
 save(jags.result.single.subject, jags.m, file=paste0("data/mcmc/jags-result-single-subject-",which.subject,"-",args[2],".Rdata"))
 

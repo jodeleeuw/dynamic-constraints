@@ -22,7 +22,7 @@ merge.mcmc.lists <- function(mcmclist.1, mcmclist.2){
 
 for(i in 1:length(all.files)){
   load(paste0(base.path,'/',all.files[i]), verbose=T)
-  thinned <- window(jags.result.individual, thin=100)
+  thinned <- window(jags.result.individual, thin=40)
   if(i==1){
     merged.rjags <- thinned  
   } else {
@@ -30,8 +30,8 @@ for(i in 1:length(all.files)){
   }
 }
 
-effectiveSize(merged.rjags)
-gelman.diag(merged.rjags)
+es <- effectiveSize(merged.rjags)
+#gelman.diag(merged.rjags)
 
 jags.individual <- merged.rjags
 save(jags.individual, file='data/jags-result-individual.Rdata')

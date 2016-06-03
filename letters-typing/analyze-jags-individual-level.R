@@ -10,7 +10,7 @@ load('data/jags-result-individual.Rdata')
 load('data/data-for-individual-model.Rdata')
 
 # effective sample size
-#effectiveSize(jags.individual)
+#es <- effectiveSize(jags.individual)
 
 # count subjects
 n.subjects <- length(unique(data.for.model$subject))
@@ -65,6 +65,9 @@ ggplot(subject.p.learner, aes(x=sortorder, y=p, fill=condition))+
   scale_x_continuous(breaks=seq(from=0,to=150,by=25))+
   scale_fill_hue(labels=c('Known words', 'Unknown words', 'Scrambled'), name='Context')+
   theme_minimal(base_size=14)
+
+# save subject.p.learner for analysis with debrief data
+save(subject.p.learner, file='data/subject-p-learn.Rdata')
 
 # n subjects above 50%, 75%
 sum(subject.p.learner$p>=0.5)/nrow(subject.p.learner)
@@ -193,10 +196,10 @@ ggplot(sample.plotting.data, aes(x=t,y=rt,colour=interaction(letter,cond)))+
   theme_minimal()
 # plot HDIs for conditions ####
 layout(matrix(1:6, ncol=2))
-plotPost(jags.posterior.matrix[,'learner.cond[1]'],xlab="Known words",xlim=c(0,1),main="p(learning)")
+plotPost(jags.posterior.matrix[,'learner.cond[1]'],xlab="Known words",xlim=c(0,1),main=expression(theta[c]), cex.main=2.5)
 plotPost(jags.posterior.matrix[,'learner.cond[2]'],xlab="Novel words",xlim=c(0,1))
 plotPost(jags.posterior.matrix[,'learner.cond[3]'],xlab="Scrambled",xlim=c(0,1))
-plotPost(jags.posterior.matrix[,'offset.mode[1]'],xlab="Known words",xlim=c(0,36),main="Learning offset")
+plotPost(jags.posterior.matrix[,'offset.mode[1]'],xlab="Known words",xlim=c(0,36),main=expression(phi[c]), cex.main=2.5)
 plotPost(jags.posterior.matrix[,'offset.mode[2]'],xlab="Novel words",xlim=c(0,36))
 plotPost(jags.posterior.matrix[,'offset.mode[3]'],xlab="Scrambled",xlim=c(0,36))
 

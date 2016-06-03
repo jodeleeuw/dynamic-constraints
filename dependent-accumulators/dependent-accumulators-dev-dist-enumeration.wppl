@@ -1,0 +1,72 @@
+// Written for webppl dev branch -- there may be breaking changes
+
+var init = function(n,y){
+  return repeat(n, function(){ return y; });
+};
+
+var step = function(states, p, n){
+  return map(
+    function(x) { return x + binomial(p,n) },
+    states
+  );
+};
+
+var count_complete = function(finish){
+  return filter(function(x){
+    return x > -1;
+  }, finish).length;
+};
+
+var update_finish_times = function(finish, state, t, end){
+  return map2(
+    function(s,f) {
+      if(f != -1) { return f; }
+      if(s >= end) {
+        return t;
+      } else {
+        return f;
+      }
+    },
+    state,
+    finish
+  );
+};
+
+var accumulators = function(n, modelParams, finish, state, t){
+  var finished_count = count_complete(finish);
+  var p_this = 1 - Math.pow(1 - modelParams.p,
+                            1 + modelParams.boost*finished_count);
+  var newState = step(state, p_this, modelParams.end);
+  var newFinish = update_finish_times(finish, newState, t, modelParams.end);
+  if(count_complete(newFinish) == n){
+    return sort(newFinish);
+  } else {
+    return accumulators(n, modelParams, newFinish, newState, t+1);
+  }
+};
+
+// Example data (not sure what form yours are in)
+var data = [4, 10, 18, 24];
+var n = data.length;
+
+var model = function(){
+  var modelParams = {
+    p : beta({a: 2, b: 20}),
+    end : discrete({ps: init(100,0.01)}),
+    boost : gamma({shape: 1.64, scale: 0.64}) // mode ~ 1, sd ~ 2
+  };
+
+  var initState = init(n, 0);
+  var initFinish = init(n, -1);
+
+  var modelOutput = Infer({method: 'rejection', samples: 1000}, function() {
+    return accumulators(n, modelParams, initFinish, initState, 1);
+  });
+
+  factor(modelOutput.score(data));
+
+  return modelParams;
+};
+
+Infer({method: 'MCMC', samples: 100, verbose : true},
+      model);

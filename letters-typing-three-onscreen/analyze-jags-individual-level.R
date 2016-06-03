@@ -34,8 +34,10 @@ ggplot(subject.p.learner, aes(x=sortorder, y=p, fill=condition))+
   geom_bar(stat='identity')+
   labs(x="\nSubject", y="Proportion of samples classified as learner\n")+
   scale_x_continuous(breaks=seq(from=0,to=275,by=25))+
-  scale_fill_hue(labels=c('Known words', 'Unknown words', 'Scrambled'), name='Context')+
+  scale_fill_hue(labels=c('Known words', 'Novel words', 'Scrambled'), name='Context')+
   theme_minimal(base_size=14)
+
+save(subject.p.learner, file='data/subject.p.learn.Rdata')
 
 # n subjects above 50%, 75%
 sum(subject.p.learner$p>=0.5)/nrow(subject.p.learner)
@@ -78,23 +80,21 @@ ggplot(hdi.plotting.data, aes(x=order,ymin=low,ymax=high, y=median, colour=condi
 
 # plotting subject model data ####
 
-# function to generate predicted mean rt from condition, position, and time
 model.prediction <- function(row, subject, t, p){
-  a <- row[paste0('a.adapt[',subject,']')]
+  a.N <- row[paste0('a.adapt[',subject,',1]')]
+  a.W <- row[paste0('a.adapt[',subject,',2]')]
   b <- row[paste0('b.adapt[',subject,']')]
   c <- row[paste0('c.adapt[',subject,']')]
-  item.difference <- row[paste0('item.difference[',subject,']')]
+  islearner <- row[paste0('is.learner[',subject,']')]
   offset.W <- row[paste0('offset.W[',subject,']')]
   b.W <- row[paste0('b.W[',subject,']')]
   c.W <- row[paste0('c.W[',subject,']')]
   
-  
-  adapt <- (a * (1 + b*(t^-c - 1)))
-  N <- adapt + item.difference/2
-  if( t < offset.W) {
-    W <- adapt - item.difference/2
+  N <- (a.N * (1 + b*(t^-c - 1)))
+  if( t < offset.W || islearner == 2) {
+    W <- (a.W * (1 + b*(t^-c - 1)))
   } else {
-    W <- adapt * (1 + b.W*((t-offset.W+1)^-c.W - 1)) - item.difference/2
+    W <- (a.W * (1 + b*(t^-c - 1))) * (1 + b.W*((t-offset.W+1)^-c.W - 1))
   }
   
   if(p=="rt.W"){
@@ -132,30 +132,60 @@ data.posterior.overlay$letter <- factor(as.character(data.posterior.overlay$lett
 data.for.plotting <- data.for.model %>% gather(letter,rt,4:5)
 data.for.plotting$letter <- factor(as.character(data.for.plotting$letter), levels=c('rt.W','rt.N'))
 
-n.per.panel <- 20
-total.panels <- ceiling(n.subjects/20)
-for(i in 1:total.panels){
-  subject.subset <- ((i-1)*n.per.panel + 1):(n.per.panel*i)
-  p <- ggplot(subset(data.for.plotting, subject %in% subject.subset), aes(x=t,y=rt,colour=interaction(letter,cond)))+
-    geom_point(alpha=1)+
-    geom_line(data=subset(data.posterior.overlay, subject %in% subject.subset), aes(x=t,y=y,colour=interaction(letter,cond),group=interaction(i,letter)), alpha=0.2)+
-    scale_colour_manual(name="Context", labels=c("W - Three known words", "N - Three known words", "W - Three unknown words", "N - Three unknown words",  "W - Scrambled", "N - Scrambled"), values=c('#a50f15','#fcae91','#006d2c','#bae4b3','#08519c','#bdd7e7'))+
-    labs(x="\nNumber of times the letter has appeared in the sequence", y="RT (ms)\n", title="Response times to N and W")+
-    facet_wrap(~subject)+
-    theme_minimal()
-  print(p)
-}
+# n.per.panel <- 20
+# total.panels <- ceiling(n.subjects/20)
+# for(i in 1:total.panels){
+#   subject.subset <- ((i-1)*n.per.panel + 1):(n.per.panel*i)
+#   p <- ggplot(subset(data.for.plotting, subject %in% subject.subset), aes(x=t,y=rt,colour=interaction(letter,cond)))+
+#     geom_point(alpha=1)+
+#     geom_line(data=subset(data.posterior.overlay, subject %in% subject.subset), aes(x=t,y=y,colour=interaction(letter,cond),group=interaction(i,letter)), alpha=0.2)+
+#     scale_colour_manual(name="Context", labels=c("W - Three known words", "N - Three known words", "W - Three unknown words", "N - Three unknown words",  "W - Scrambled", "N - Scrambled"), values=c('#a50f15','#fcae91','#006d2c','#bae4b3','#08519c','#bdd7e7'))+
+#     labs(x="\nNumber of times the letter has appeared in the sequence", y="RT (ms)\n", title="Response times to N and W")+
+#     facet_wrap(~subject)+
+#     theme_minimal()
+#   print(p)
+# }
+
+# plot subset of subjects with different learning outcomes
+sample.subjects <- c(55,126,184, 110,251,175, 201,100,28)
+sample.plotting.data <- subset(data.for.plotting, subject %in% sample.subjects)
+sample.plotting.data$subject <- factor(sample.plotting.data$subject, levels=sample.subjects)
+sample.overlay.data <- subset(data.posterior.overlay, subject %in% sample.subjects)
+sample.overlay.data$subject<- factor(sample.overlay.data$subject, levels=sample.subjects)
+subject.labels <- sapply(as.character(sample.subjects), function(x){
+  return(paste0("Subject ",x,", p(learn) = ",round(subset(subject.p.learner,subject==x)$p,digits=3)))
+})
+ggplot(sample.plotting.data, aes(x=t,y=rt,colour=interaction(letter,cond)))+
+  geom_point(alpha=1)+
+  geom_line(data=sample.overlay.data, aes(x=t,y=y,colour=interaction(letter,cond),group=interaction(i,letter)), alpha=0.2)+
+  scale_colour_manual(name="Context", labels=c("W - Known words", "N - Known words", "W - Novel words", "N - Novel words",  "W - Scrambled", "N - Scrambled"), values=c('#a50f15','#fcae91','#006d2c','#bae4b3','#08519c','#bdd7e7'))+
+  labs(x="\nNumber of times the letter has appeared in the sequence", y="RT (ms)\n", title="Response times to N and W")+
+  facet_wrap(~subject, labeller = labeller(subject=subject.labels))+
+  theme_minimal()
+
+# plot the subject who had no offset for learning
+ggplot(subset(data.for.plotting, subject %in% c(51)), aes(x=t,y=rt,colour=interaction(letter,cond)))+
+  geom_point(alpha=1)+
+  geom_line(data=subset(data.posterior.overlay, subject %in% c(51)), aes(x=t,y=y,colour=interaction(letter,cond),group=interaction(i,letter)), alpha=0.2)+
+  scale_colour_manual(name="Context", labels=c("W - Known words", "N - Known words", "W - Novel words", "N - Novel words",  "W - Scrambled", "N - Scrambled"), values=c('#a50f15','#fcae91','#006d2c','#bae4b3','#08519c','#bdd7e7'))+
+  labs(x="\nNumber of times the letter has appeared in the sequence", y="RT (ms)\n", title="Response times to N and W")+
+  theme_minimal()
 
 # plot HDIs for conditions ####
 layout(matrix(1:6, ncol=2))
-plotPost(jags.posterior.matrix[,'learner.cond[1]'],xlab="Three known words",xlim=c(0,1))
-plotPost(jags.posterior.matrix[,'learner.cond[2]'],xlab="Three unknown words",xlim=c(0,1))
+plotPost(jags.posterior.matrix[,'learner.cond[1]'],xlab="Known words",xlim=c(0,1),main=expression(theta[c]), cex.main=2.5)
+plotPost(jags.posterior.matrix[,'learner.cond[2]'],xlab="Novel words",xlim=c(0,1))
 plotPost(jags.posterior.matrix[,'learner.cond[3]'],xlab="Scrambled",xlim=c(0,1))
-plotPost(jags.posterior.matrix[,'offset.mode[1]'],xlab="Three known words",xlim=c(0,36))
-plotPost(jags.posterior.matrix[,'offset.mode[2]'],xlab="Three unknown words",xlim=c(0,36))
-plotPost(jags.posterior.matrix[,'offset.mode[3]'],xlab="Scrambled",xlim=c(0,36))
+plotPost(jags.posterior.matrix[,'offset.mode[1]'],xlab="Known words",xlim=c(0,50),main=expression(phi[c]), cex.main=2.5)
+plotPost(jags.posterior.matrix[,'offset.mode[2]'],xlab="Novel words",xlim=c(0,50))
+plotPost(jags.posterior.matrix[,'offset.mode[3]'],xlab="Scrambled",xlim=c(0,50))
 
 # plot HDIs for group parameters ####
 #layout(1:2)
-plotPost(jags.posterior.matrix[,'b.W.group.mode'])
-plotPost(jags.posterior.matrix[,'b.W.group.concentration'])
+layout(matrix(1:6, ncol=2))
+plotPost(jags.posterior.matrix[,'b.W.group.mode[1]'])
+plotPost(jags.posterior.matrix[,'b.W.group.mode[2]'])
+plotPost(jags.posterior.matrix[,'b.W.group.mode[3]'])
+plotPost(jags.posterior.matrix[,'c.W.group[1]'])
+plotPost(jags.posterior.matrix[,'c.W.group[2]'])
+plotPost(jags.posterior.matrix[,'c.W.group[3]'])

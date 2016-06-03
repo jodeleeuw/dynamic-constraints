@@ -21,7 +21,13 @@ data.test$appearanceCount <- rep(as.vector(sapply(1:36, function(x){return(rep(x
 
 # get subset of data for the model
 data.for.model <- subset(data.test, correct==1 & triple_type == 'critical' & triple_position%in%c(1,3), c('subject','cond','appearanceCount','triple_position','rt'))
- 
+
+# one subject (13266) did not record a single correct response
+# i missed this the first time through which messed up the ordering of subject numbers for the explicit debrief data
+# this is just some code to fix that order post-hoc
+subject.id <- data.frame(original=unique(data.test$subject))
+subject.id$original.numeric <- as.numeric(factor(subject.id$original))
+
 # get data in right format
 data.for.model$subject <- as.numeric(factor(data.for.model$subject))
 data.for.model$cond <- factor(as.character(data.for.model$cond), levels=c('known','unknown','one'))
