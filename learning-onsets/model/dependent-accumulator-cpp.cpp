@@ -39,6 +39,27 @@ NumericVector dependentAccumulators(int n, double p, int end, double boost) {
 }
 
 // [[Rcpp::export]]
+NumericVector dependentAccumulatorsNoSort(int n, double p, int end, double boost) {
+  NumericVector accumulators(n);
+  NumericVector finishTimes(n);
+  int finishedCount = 0;
+  int t = 0;
+  double pSample = p;
+  while(finishedCount < n){
+    t++;
+    accumulators = accumulators + rbinom(n, end, pSample);
+    for(int i=0; i<finishTimes.size(); i++){
+      if(finishTimes[i] == 0 && accumulators[i] >= end){
+        finishTimes[i] = t;
+        finishedCount++;
+        pSample = 1 - pow(1 - p, 1 + boost * finishedCount);
+      }
+    }
+  }
+  return(finishTimes);
+}
+
+// [[Rcpp::export]]
 NumericVector empiricalLikelihood(int n, double p, int end, double boost, int reps, int maxFinishTime){
   int vectorlen = pow(maxFinishTime+1, n);
   NumericVector finishDistribution(vectorlen);

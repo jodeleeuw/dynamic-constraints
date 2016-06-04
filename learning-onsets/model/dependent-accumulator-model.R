@@ -19,6 +19,7 @@ library(Rcpp)
 sourceCpp('model/dependent-accumulator-cpp.cpp')
 
 dependent.accumulators <- dependentAccumulators
+dependent.accumulators.no.sort <- dependentAccumulatorsNoSort
 
 #### benchmarking ####
 #library(microbenchmark)
