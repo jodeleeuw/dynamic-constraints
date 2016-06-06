@@ -7,13 +7,10 @@ library(grid)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-# good candidate -> 0.01, 3, 100
-reps <- 1000
-p <- rbeta(reps, 1, 100)
-end <- rpois(reps, 0) + 1
-boost <- 100
-
-
+reps <- 20
+p <- rep(0.02, reps)#rbeta(reps, 1, 100)
+end <- rep(4, reps)#rpois(reps, 0) + 1
+boost <- 50
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
@@ -33,7 +30,7 @@ finish.data$proportion.correct <- mapply(function(c,f){
   if(c=='One triple'){
     return(.5 + f*.5)
   } else {
-    return(.5 + f*.125)
+    return((1 - f/4)*.5 + f/4 * 1)
   }
 },finish.data$condition,finish.data$finished.count)
 
@@ -41,36 +38,77 @@ finish.data.summary <- ddply(finish.data, .(condition), function(s){
   return(c(m=mean(s$proportion.correct), se=(sd(s$proportion.correct)/sqrt(length(s$proportion.correct)))))
 })
 
+# empirical data ####
+empirical.data <- data.frame(condition=c('Four triples', 'One triple'),
+                             mid=c(.733, .59), low=c(0.7,.512), high=c(0.767,.662))
+
 # make plots ####
 
-ggplot(finish.data.summary, aes(x=condition, y=m, ymax=m+se,ymin=m-se))+
+empirical.plot.2.1 <- ggplot(empirical.data, aes(x=condition, y=mid,ymax=high,ymin=low))+
   geom_pointrange()+
-  theme_minimal()
+  labs(x="\nExperiment condition", y="Proportion correct\n",title="Experiment 2.1")+
+  coord_cartesian(ylim=c(0.5,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(1,1,2,1),units="lines"))
 
-# max.val <- max(finish.data$finish.time)+1
-# 
-# histograms <- ggplot(finish.data, aes(x=finish.time, fill=condition))+
-#   geom_histogram(alpha=0.6, position = 'identity', bins=30)+
-#   geom_vline(xintercept = 72)+
-#   theme_minimal()+
-#   labs(x="Accumulator finish time", y="Frequency",fill="Condition",title="Learning onset for target triple")+
-#   scale_x_continuous(limits=c(0,200))+
-#   theme(axis.text.y=element_blank())
-# 
-# mean.se <- ggplot(finish.data.summary, aes(x=condition, colour=condition, y=m, ymax=m+1.96*se, ymin=m-1.96*se))+
-#   geom_pointrange(size=1)+
-#   scale_y_continuous(limits=c(0,72))+
-#   labs(y="Learning onset", x="",title="Mean onset of learning for subjects who learned")+
-#   coord_flip()+
-#   scale_color_hue(guide=F)+
-#   theme_minimal()+
-#   theme(axis.text.y=element_blank(), plot.margin=unit(c(1,1,1,1),'lines'))
-# 
-# proportion.learners <- ggplot(finish.data.summary, aes(x=condition,y=p.learn, fill=condition))+
-#   geom_bar(stat='identity')+
-#   labs(title="Proportion of subjects who learned\n",x="",y="")+
-#   scale_fill_hue(guide=F)+
-#   theme_minimal()+theme(plot.margin=unit(c(1,1,1,1),'lines'))
-#   
-# 
-# grid.arrange(grobs=list(histograms, mean.se, proportion.learners), heights=c(4,2),layout_matrix=matrix(c(1,1,2,3),nrow=2,byrow=T))
+model.plot.2.1 <- ggplot(finish.data.summary, aes(x=condition, y=m,ymax=m+se,ymin=m-se))+
+  geom_pointrange()+
+  labs(x="\nModel", y="",title="Model Results")+
+  coord_cartesian(ylim=c(0.5,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(1,1,2,1),units="lines"))
+
+grid.arrange(empirical.plot.2.1, model.plot.2.1, nrow=1)
+
+# experiment 2.2 ####
+
+reps <- 86
+p <- rep(.02,reps)
+end <- rep(4,reps)
+pre.k <- .25
+boost <- 50
+
+# predict learning time for W (of NIW triple) in four triple condition
+# with boost
+finished.known <- sapply(1:reps, function(x){sum(dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,rep(end[x]*pre.k,3)))[1]<=20)})
+
+# no boost
+finished.novel <- sapply(1:reps, function(x){sum(dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,0,0,0))<=20)})
+
+# make data frame
+finish.data.2.2 <- data.frame(condition=c(rep("Known words", reps), rep("Novel words", reps)),
+                              finished.count=c(finished.known, finished.novel))
+
+finish.data.2.2$proportion.correct <- mapply(function(c,f){
+  if(c=='Known words'){
+    return(.25 + f*.75)
+  } else {
+    return((1-f/4)*.25 + f/4)
+  }
+},finish.data.2.2$condition,finish.data.2.2$finished.count)
+
+finish.data.summary.2.2 <- ddply(finish.data.2.2, .(condition), function(s){
+  return(c(m=mean(s$proportion.correct), se=(sd(s$proportion.correct)/sqrt(length(s$proportion.correct)))))
+})
+
+# empirical data ####
+empirical.data.2.2 <- data.frame(condition=c('Known words', 'Novel words'),
+                                 mid=c(.565, .396), low=c(0.458,.344), high=c(0.657,.451))
+
+# make plots ####
+
+empirical.plot.2.2 <- ggplot(empirical.data.2.2, aes(x=condition, y=mid,ymax=high,ymin=low))+
+  geom_pointrange()+
+  labs(x="\nExperiment condition", y="Proportion correct\n",title="Experiment 2.2")+
+  coord_cartesian(ylim=c(0.3,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(2,1,1,1),units="lines"))
+
+model.plot.2.2 <- ggplot(finish.data.summary.2.2, aes(x=condition, y=m,ymax=m+se,ymin=m-se))+
+  geom_pointrange()+
+  labs(x="\nModel", y="",title="Model Results")+
+  coord_cartesian(ylim=c(0.3,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(2,1,1,1),units="lines"))
+
+grid.arrange(empirical.plot.2.1, model.plot.2.1,empirical.plot.2.2, model.plot.2.2, nrow=2)

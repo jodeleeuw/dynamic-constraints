@@ -8,10 +8,9 @@ source('model/dependent-accumulator-model.R')
 
 # set shared params
 reps <- 10000
-p <- rbeta(reps, 1, 150)
-end <- rpois(reps, 3) + 1
+p <- rbeta(reps, sample(c(1,8),size=reps,prob=c(0.8,0.2),replace=T), 300)
+end <- rpois(reps, 3) + 1 # rep(3,reps) #rpois(reps, 3) + 1
 boost <- 100
-
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
@@ -44,21 +43,22 @@ histograms <- ggplot(finish.data, aes(x=finish.time, fill=condition))+
   theme_minimal()+
   labs(x="Accumulator finish time", y="Frequency",fill="Condition",title="Learning onset for target triple")+
   scale_x_continuous(limits=c(0,200))+
+  scale_fill_manual(values=c(hcl(135,100,65), hcl(195,100,65), hcl(255,100,65)))+
   theme(axis.text.y=element_blank())
 
 mean.se <- ggplot(finish.data.summary, aes(x=condition, colour=condition, y=m, ymax=m+1.96*se, ymin=m-1.96*se))+
-  geom_pointrange(size=1)+
+  geom_point(size=2)+
   scale_y_continuous(limits=c(0,72))+
   labs(y="Learning onset", x="",title="Mean onset of learning for subjects who learned")+
   coord_flip()+
-  scale_color_hue(guide=F)+
+  scale_color_manual(values=c(hcl(135,100,65), hcl(195,100,65), hcl(255,100,65)),guide=F)+
   theme_minimal()+
   theme(axis.text.y=element_blank(), plot.margin=unit(c(1,1,1,1),'lines'))
 
 proportion.learners <- ggplot(finish.data.summary, aes(x=condition,y=p.learn, fill=condition))+
   geom_bar(stat='identity')+
   labs(title="Proportion of subjects who learned\n",x="",y="")+
-  scale_fill_hue(guide=F)+
+  scale_fill_manual(values=c(hcl(135,100,65), hcl(195,100,65), hcl(255,100,65)), guide=F)+
   theme_minimal()+theme(plot.margin=unit(c(1,1,1,1),'lines'))
   
 

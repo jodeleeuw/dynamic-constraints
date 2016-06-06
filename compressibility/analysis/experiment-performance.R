@@ -54,6 +54,8 @@ plotPost(mcmcMat[,'diff'], xlab="Difference in probability of a \ncorrect respon
 
 save(result, file="data/output/MCMC_sample_experiment_data.Rdata")
 
+plotPost(mcmcMat[,'baseline'] + mcmcMat[,'diff'] / 2)
+plotPost(mcmcMat[,'baseline'] - mcmcMat[,'diff'] / 2)
 
 
 

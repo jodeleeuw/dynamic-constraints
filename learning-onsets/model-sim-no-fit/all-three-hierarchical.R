@@ -8,10 +8,10 @@ source('model/dependent-accumulator-model.R')
 
 # set shared params
 reps <- 10000
-p <- rbeta(reps, 1, 150)
+p <- rbeta(reps, sample(c(1,8),size=reps,prob=c(0.8,0.2),replace=T), 300)
 end <- rpois(reps, 3) + 1
 boost <- 100
-pre.k <- .7
+pre.k <- .85
 
 
 # predict learning time for W (of NIW triple) in four triple condition
@@ -36,19 +36,26 @@ finish.data.summary <- ddply(finish.data, .(condition), function(s){
   return(c(m=m,se=se,p.learn=p.learn))
 })
 
+# empirical data ####
+empirical.data <- data.frame(condition = c('Four triples - known', 'Four triples - unknown', 'One triple'),
+                             onset.mid = c(18.1,29.3,40.1), onset.low = c(16.9,26.8,36.2), onset.high = c(19.6,31.6,44.7),
+                             proportion.mid = c(0.717,0.304,0.179), proportion.low = c(0.579, 0.207, 0.0976), proportion.high = c(0.845, 0.431, 0.285))
+
+
 # make plots ####
 max.val <- max(finish.data$finish.time)+1
 
 histograms <- ggplot(finish.data, aes(x=finish.time, fill=condition))+
-  geom_histogram(alpha=0.6, position = 'identity', bins=30)+
+  geom_histogram(alpha=0.6, position = 'identity', bins=50)+
   geom_vline(xintercept = 72)+
   theme_minimal()+
   labs(x="Accumulator finish time", y="Frequency",fill="Condition",title="Learning onset for target triple")+
-  scale_x_continuous(limits=c(0,150))+
+  scale_x_continuous(limits=c(0,100))+
   theme(axis.text.y=element_blank())
 
 mean.se <- ggplot(finish.data.summary, aes(x=condition, colour=condition, y=m, ymax=m+1.96*se, ymin=m-1.96*se))+
-  geom_pointrange(size=1)+
+  geom_point(shape=108,size=10)+
+  geom_pointrange(data=empirical.data, colour='black', aes(y=onset.mid, ymax=onset.high, ymin=onset.low))+
   scale_y_continuous(limits=c(0,72))+
   labs(y="Learning onset", x="",title="Mean onset of learning for subjects who learned")+
   coord_flip()+
@@ -58,6 +65,7 @@ mean.se <- ggplot(finish.data.summary, aes(x=condition, colour=condition, y=m, y
 
 proportion.learners <- ggplot(finish.data.summary, aes(x=condition,y=p.learn, fill=condition))+
   geom_bar(stat='identity')+
+  geom_pointrange(data=empirical.data, aes(y=proportion.mid,ymax=proportion.high, ymin=proportion.low))+
   labs(title="Proportion of subjects who learned\n",x="",y="")+
   scale_fill_hue(guide=F)+
   theme_minimal()+theme(plot.margin=unit(c(1,1,1,1),'lines'))

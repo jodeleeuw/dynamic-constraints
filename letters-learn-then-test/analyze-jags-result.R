@@ -15,3 +15,6 @@ mcmcMat <- as.matrix(as.mcmc.list(jags.result))
 layout(matrix(1:2, nrow=1))
 plotPost(mcmcMat[,'baseline'], xlab="Baseline probability of a correct response",cex.lab = 1)
 plotPost(mcmcMat[,'diff'], xlab="Difference in probability of a \ncorrect response between conditions",cex.lab = 1)
+
+plotPost(mcmcMat[,'baseline'] + mcmcMat[,'diff']/2)
+plotPost(mcmcMat[,'baseline'] - mcmcMat[,'diff']/2)
