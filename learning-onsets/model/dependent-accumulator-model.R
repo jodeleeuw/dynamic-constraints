@@ -20,6 +20,7 @@ sourceCpp('model/dependent-accumulator-cpp.cpp')
 
 dependent.accumulators <- dependentAccumulators
 dependent.accumulators.no.sort <- dependentAccumulatorsNoSort
+dependent.accumulators.pre.knowledge <- dependentAccumulatorsPreKnowledge
 
 #### benchmarking ####
 #library(microbenchmark)
