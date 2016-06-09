@@ -7,8 +7,8 @@ library(grid)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-reps <- 20
-p <- rep(0.02, reps)#rbeta(reps, 1, 100)
+reps <- 1000
+p <- rep(0.020, reps)#rbeta(reps, 1, 100)
 end <- rep(4, reps)#rpois(reps, 0) + 1
 boost <- 50
 
@@ -62,11 +62,7 @@ grid.arrange(empirical.plot.2.1, model.plot.2.1, nrow=1)
 
 # experiment 2.2 ####
 
-reps <- 86
-p <- rep(.02,reps)
-end <- rep(4,reps)
 pre.k <- .25
-boost <- 50
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
@@ -81,9 +77,9 @@ finish.data.2.2 <- data.frame(condition=c(rep("Known words", reps), rep("Novel w
 
 finish.data.2.2$proportion.correct <- mapply(function(c,f){
   if(c=='Known words'){
-    return(.25 + f*.75)
+    return(1/6 + f*5/6)
   } else {
-    return((1-f/4)*.25 + f/4)
+    return((1 - f/4)*(1/6) + f/4 * 1)
   }
 },finish.data.2.2$condition,finish.data.2.2$finished.count)
 

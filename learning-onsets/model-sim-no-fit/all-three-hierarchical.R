@@ -7,19 +7,24 @@ library(grid)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-reps <- 10000
-p <- rbeta(reps, sample(c(1,8),size=reps,prob=c(0.8,0.2),replace=T), 300)
-end <- rpois(reps, 3) + 1
-boost <- 100
-pre.k <- .85
+reps <- 20000
+m <- sample(c(0.001, 0.020), reps, replace=T, prob=c(0.8,0.2))
+k <- 300
+a <- m*(k-2)+1
+b <- (1-m)*(k-2)+1
+p <- rbeta(reps, a,b)
+hist(p, breaks=100)
+end <- rpois(reps, 2) + 1
+boost <- 50
+pre.k <- 3/4
 
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
-f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,rep(floor(end[x]*pre.k),3)))[[1]]})
+f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,rep(end[x]*pre.k,3)))[[1]]})
 
 # no boost
-f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,0,0,0))[[1]]})
+f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0, 0, 0, 0))[[1]]})
 
 # predict learning time in the one triple condition
 f.times.one <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(1,p[x],end[x],0, c(0))[[1]]})
@@ -46,7 +51,7 @@ empirical.data <- data.frame(condition = c('Four triples - known', 'Four triples
 max.val <- max(finish.data$finish.time)+1
 
 histograms <- ggplot(finish.data, aes(x=finish.time, fill=condition))+
-  geom_histogram(alpha=0.6, position = 'identity', bins=50)+
+  geom_histogram(alpha=0.6, position = 'identity', bins=101)+
   geom_vline(xintercept = 72)+
   theme_minimal()+
   labs(x="Accumulator finish time", y="Frequency",fill="Condition",title="Learning onset for target triple")+
