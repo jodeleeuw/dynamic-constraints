@@ -8,7 +8,7 @@ library(DEoptim)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-reps <- 500
+reps <- 1000
 
 # empirical data
 data = c(.733, .590, .565, .396)
@@ -41,12 +41,12 @@ model <- function(params){
   
   rmse = sum(sqrt( (prediction-data)^2 ))
   
-  #return(rmse)
+  return(rmse)
   
-  return(prediction)
+  #return(prediction)
 }
 
-model(c(0.02,4,50,0.5))
+model(c(0.02,4,50,0.25))
 
 #x <- seq(from=100,to=5000,by=100)
 #y <- sapply(x, function(r){return(model(c(0.02,6,50,.5),r))})

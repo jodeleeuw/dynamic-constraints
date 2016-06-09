@@ -8,9 +8,9 @@ source('model/dependent-accumulator-model.R')
 
 # set shared params
 reps <- 1000
-p <- rep(0.020, reps)#rbeta(reps, 1, 100)
-end <- rep(4, reps)#rpois(reps, 0) + 1
-boost <- 50
+p <- rep(0.024, reps)#rbeta(reps, 1, 100)
+end <- rep(6, reps)#rpois(reps, 0) + 1
+boost <- 168
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
