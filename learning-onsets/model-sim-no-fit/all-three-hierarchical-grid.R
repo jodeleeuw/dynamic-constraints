@@ -11,7 +11,7 @@ reps <- 1000
 empirical.data <- c(18.1, 29.3, 40.1, .717, .304, .179)
 empirical.range <- c(72,72,72,1,1,1)
 
-results <- expand.grid(p=seq(from=0.09, to=0.1,by=0.01), end=seq(from=1,to=20,by=1), boost=seq(from=0, to=200,by=10), pre.k=seq(from=0,to=1,by=0.1))
+results <- expand.grid(p=seq(from=0.01, to=0.1, by=0.01), end=seq(from=1,to=20,by=1), boost=seq(from=0, to=200,by=10), pre.k=seq(from=0,to=1,by=0.1))
 
 model <- function(p, end, boost, pre.k, i){
   

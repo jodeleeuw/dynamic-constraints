@@ -8,29 +8,29 @@ library(EasyABC)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-reps <- 1000
+reps <- 100
 
 # empirical data
-data = c(.733, .59, .565, .396)
+data = c(.733, .590, .565, .396)
 
 model <- function(params){
 
-  p <- params[1]
-  end <- floor(params[2])
+  p <- max(params[1],0.000000001)
+  end <- round(params[2])
   boost <- params[3]
-  pre.k <- params[4]
+  pre.k <- min(max(params[4],0),1)
   
   # with boost
-  finished.boost <- sapply(1:reps, function(x){sum(dependent.accumulators.no.sort(4, p, end, boost)<=25)})
+  finished.boost <- sapply(1:reps, function(x){sum(dependent.accumulators.with.boundary(4, p, end, boost, c(0,0,0,0), 20) > 0)})
   
   # predict learning time in the one triple condition
-  finished.one <- sapply(1:reps, function(x){sum(dependent.accumulators.no.sort(1,p,end,0)<=25)})
+  finished.one <- sapply(1:reps, function(x){sum(dependent.accumulators.with.boundary(1, p, end, 0, c(0,0,0,0), 20) > 0)})
   
   # with boost
-  finished.known <- sapply(1:reps, function(x){sum(dependent.accumulators.pre.knowledge(4, p, end, boost, c(0,rep(floor(end*pre.k),3)))[1]<=20)})
+  finished.known <- sapply(1:reps, function(x){sum(dependent.accumulators.with.boundary(4, p, end, boost, c(0,rep(floor(end*pre.k),3)), 20)[1] > 0)})
   
   # no boost
-  finished.novel <- sapply(1:reps, function(x){sum(dependent.accumulators.pre.knowledge(4, p, end, boost, c(0,0,0,0))<=20)})
+  finished.novel <- sapply(1:reps, function(x){sum(dependent.accumulators.with.boundary(4, p, end, boost, c(0,0,0,0), 20) > 0)})
   
   prediction = c(
     mean((1-finished.boost/4)*.5 + (finished.boost/4)),
@@ -46,7 +46,9 @@ model <- function(params){
   return(prediction)
 }
 
-model(c(0.02,6,50,.5))
+#x <- seq(from=100,to=5000,by=100)
+#y <- sapply(x, function(r){return(model(c(0.02,6,50,.5),r))})
+#plot(x,y)
 
 prior <- function(){
   return(
@@ -83,11 +85,47 @@ shifted.neg.binom.d <- function(x, disp, mu){
 
 prior = list(
   list(c('rbeta',1,1,20), c('dbeta',1,20)),
-  list(c('shited.neg.binom.r',2,10), c('shifted.neg.binom.d',2,10)),
-  list(c('r'))
+  list(c('shifted.neg.binom.r',2,20), c('shifted.neg.binom.d',2,20)),
+  list(c('rexp',1,1/100), c('dexp',1/100)),
+  list(c('runif',1,0,1), c('dunif',0,1))
 )
 
-result <- ABC_rejection(model, prior, nb_simul = 100, summary_stat_target = data, tol=0.1 )
+r.prior <- function(){
+  return(
+    c(
+      rbeta(1,1,20),
+      shifted.neg.binom.r(2,20),
+      rexp(1,1/100),
+      runif(1,0,1)
+    )
+  )
+}
+
+d.prior <- function(params){
+  return(
+    prod(
+      dbeta(params[1],1,20),
+      shifted.neg.binom.d(round(params[2]),2,20),
+      dexp(params[3],1/100),
+      dunif(params[4],0,1)
+    )
+  )
+}
+
+result <- ABC_rejection(model, prior, nb_simul = 100000, summary_stat_target = data, tol=0.01,progress_bar = T)
+
+layout(matrix(1:4,nrow=2))
+hist(result$param[,1], breaks=50)
+hist(result$param[,2], breaks=50)
+hist(result$param[,3], breaks=50)
+hist(result$param[,4], breaks=50)
+
+result.mcmc <- ABC_mcmc(method='Marjoram', model=model, prior=prior, summary_stat_target = data, progress_bar=T)
+
+result.sabc <- SABC(model,r.prior,d.prior, y=data,n.sample=1000, eps.init=1,iter.max=20000, method='informative', verbose=100)
+
+?optim
+
 # make plots ####
 # 
 # empirical.plot.2.2 <- ggplot(empirical.data.2.2, aes(x=condition, y=mid,ymax=high,ymin=low))+

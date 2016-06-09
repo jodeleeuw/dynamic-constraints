@@ -81,6 +81,27 @@ NumericVector dependentAccumulatorsPreKnowledge(int n, double p, int end, double
 }
 
 // [[Rcpp::export]]
+NumericVector dependentAccumulatorsWithBoundary(int n, double p, int end, double boost, NumericVector accumulators, int maxTime) {
+  // NumericVector accumulators(n);
+  NumericVector finishTimes(n);
+  int finishedCount = 0;
+  int t = 0;
+  double pSample = p;
+  while(finishedCount < n && t <= maxTime){
+    t++;
+    accumulators = accumulators + rbinom(n, end, pSample);
+    for(int i=0; i<finishTimes.size(); i++){
+      if(finishTimes[i] == 0 && accumulators[i] >= end){
+        finishTimes[i] = t;
+        finishedCount++;
+        pSample = 1 - pow(1 - p, 1 + boost * finishedCount);
+      }
+    }
+  }
+  return(finishTimes);
+}
+
+// [[Rcpp::export]]
 NumericVector empiricalLikelihood(int n, double p, int end, double boost, int reps, int maxFinishTime){
   int vectorlen = pow(maxFinishTime+1, n);
   NumericVector finishDistribution(vectorlen);
