@@ -46,7 +46,7 @@ model <- function(params){
   #return(prediction)
 }
 
-model(c(0.02,4,50,0.25))
+model(c(0.024,6,168,0.25))
 
 #x <- seq(from=100,to=5000,by=100)
 #y <- sapply(x, function(r){return(model(c(0.02,6,50,.5),r))})

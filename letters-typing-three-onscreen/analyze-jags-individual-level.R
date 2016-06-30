@@ -76,7 +76,9 @@ ggplot(hdi.plotting.data, aes(x=order,ymin=low,ymax=high, y=median, colour=condi
   theme_minimal(base_size = 14) +
   theme(strip.text=element_text(family='Times New Roman', size=14))
 
-
+# export onset data
+levels(hdi.plotting.data$parameter)
+onset.data <- subset(hdi.plotting.data, parameter==levels(hdi.plotting.data$parameter)[3] ,c('median','condition'))
 
 # plotting subject model data ####
 

@@ -8,26 +8,22 @@ source('model/dependent-accumulator-model.R')
 
 # set shared params
 reps <- 20000
-m <- sample(c(0.0004, 0.0004*55), reps, replace=T, prob=c(.8,0.2))
-k <- 340
-a <- m*(k-2)+1
-b <- (1-m)*(k-2)+1
-p <- rbeta(reps, a,b)
-hist(p, breaks=100)
-end <- 5
-boost <- 40
-pre.k <- 4/5
+
+p <- 0.004
+end <- 2
+boost <- 325
+pre.k <- .5
 
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
-f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end, boost, c(0,rep(end*pre.k,3)))[[1]]})
+f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p, end, boost, c(0,rep(end*pre.k,3)))[[1]]})
 
 # no boost
-f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end, boost, c(0, 0, 0, 0))[[1]]})
+f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p, end, boost, c(0, 0, 0, 0))[[1]]})
 
 # predict learning time in the one triple condition
-f.times.one <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(1,p[x],end,0, c(0))[[1]]})
+f.times.one <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(1,p,end,0, c(0))[[1]]})
 
 # make data frame
 finish.data <- data.frame(condition=c(rep("Four triples - known", reps), rep("Four triples - unknown", reps), rep("One triple", reps)),

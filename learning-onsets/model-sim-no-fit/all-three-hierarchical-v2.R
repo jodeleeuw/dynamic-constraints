@@ -8,26 +8,26 @@ source('model/dependent-accumulator-model.R')
 
 # set shared params
 reps <- 20000
-m <- sample(c(0.0004, 0.0004*55), reps, replace=T, prob=c(.8,0.2))
-k <- 340
+m <- sample(c(0.00015, 0.00015*166), reps, replace=T, prob=c(.75,0.25))
+k <- 450
 a <- m*(k-2)+1
 b <- (1-m)*(k-2)+1
 p <- rbeta(reps, a,b)
 hist(p, breaks=100)
-end <- 5
-boost <- 40
-pre.k <- 4/5
+end <- rpois(reps, 6 - 1) + 1
+boost <- 82
+pre.k <- 5/6
 
 
 # predict learning time for W (of NIW triple) in four triple condition
 # with boost
-f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end, boost, c(0,rep(end*pre.k,3)))[[1]]})
+f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0,rep(end[x]*pre.k,3)))[[1]]})
 
 # no boost
-f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end, boost, c(0, 0, 0, 0))[[1]]})
+f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(4, p[x], end[x], boost, c(0, 0, 0, 0))[[1]]})
 
 # predict learning time in the one triple condition
-f.times.one <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(1,p[x],end,0, c(0))[[1]]})
+f.times.one <- sapply(1:reps, function(x){dependent.accumulators.pre.knowledge(1,p[x],end[x],0, c(0))[[1]]})
 
 # make data frame
 finish.data <- data.frame(condition=c(rep("Four triples - known", reps), rep("Four triples - unknown", reps), rep("One triple", reps)),
@@ -46,6 +46,9 @@ empirical.data <- data.frame(condition = c('Four triples - known', 'Four triples
                              onset.mid = c(18.1,29.3,40.1), onset.low = c(16.9,26.8,36.2), onset.high = c(19.6,31.6,44.7),
                              proportion.mid = c(0.717,0.304,0.179), proportion.low = c(0.579, 0.207, 0.0976), proportion.high = c(0.845, 0.431, 0.285))
 
+load('model-sim-no-fit/onsetdata.Rdata')
+
+levels(onset.data$condition) <- c('Four triples - known', 'Four triples - unknown', 'One triple')
 
 # make plots ####
 max.val <- max(finish.data$finish.time)+1
@@ -53,6 +56,7 @@ max.val <- max(finish.data$finish.time)+1
 histograms <- ggplot(finish.data, aes(x=finish.time, fill=condition))+
   geom_histogram(alpha=0.6, position = 'identity', bins=101)+
   geom_vline(xintercept = 72)+
+  geom_dotplot(data=onset.data, aes(x=median), colour='black',binwidth=1)+
   theme_minimal()+
   labs(x="Accumulator finish time", y="Frequency",fill="Condition",title="Learning onset for target triple")+
   scale_x_continuous(limits=c(0,100))+
@@ -74,6 +78,12 @@ proportion.learners <- ggplot(finish.data.summary, aes(x=condition,y=p.learn, fi
   labs(title="Proportion of subjects who learned\n",x="",y="")+
   scale_fill_hue(guide=F)+
   theme_minimal()+theme(plot.margin=unit(c(1,1,1,1),'lines'))
-  
+
+# load('model-sim-no-fit/onsetdata.Rdata')
+# ggplot(onset.data, aes(x=median, y=..count..,fill=condition, colour=condition))+
+#   geom_density(adjust=2, alpha=0.5)+
+#   geom_dotplot(colour='black', binwidth=5)+
+#   labs(x='Onset of Learning', fill="Condition",colour='Condition')+
+#   theme_minimal()
 
 grid.arrange(grobs=list(histograms, mean.se, proportion.learners), heights=c(4,2),layout_matrix=matrix(c(1,1,2,3),nrow=2,byrow=T))

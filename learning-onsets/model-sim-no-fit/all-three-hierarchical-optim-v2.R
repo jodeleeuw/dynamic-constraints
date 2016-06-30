@@ -23,19 +23,19 @@ model <- function(params){
   p <- rbeta(reps, a,b)
   #hist(p, breaks=100)
   #p <- params[1]
-  end <- params[5]
+  end <- rpois(reps, params[5]-1) + 1
   boost <- params[6]
   pre.k <- params[7]
   
   # predict learning time for W (of NIW triple) in four triple condition
   # with boost
-  f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end, boost, c(0,rep(floor(end*pre.k),3)), 100)[[1]]})
+  f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end[x], boost, c(0,rep(floor(end[x]*pre.k),3)), 100)[[1]]})
   
   # no boost
-  f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end, boost, c(0, 0, 0, 0), 100)[[1]]})
+  f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end[x], boost, c(0, 0, 0, 0), 100)[[1]]})
   
   # predict learning time in the one triple condition
-  f.times.one <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(1,p[x],end,0, c(0), 100)[[1]]})
+  f.times.one <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(1,p[x],end[x],0, c(0), 100)[[1]]})
   
   
   model.data = c(

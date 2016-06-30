@@ -14,28 +14,20 @@ empirical.range <- c(72, 72, 72, 1, 1, 1)
 
 model <- function(params){
 
-  #if(any(params < 0) || any(params > 1)) { return(NA) }
-  
-  m <- sample(c(params[1], params[1]*params[2]), reps, replace=T, prob=c(1-params[3], params[3]))
-  k <- params[4]
-  a <- m*(k-2)+1
-  b <- (1-m)*(k-2)+1
-  p <- rbeta(reps, a,b)
-  #hist(p, breaks=100)
-  #p <- params[1]
-  end <- params[5]
-  boost <- params[6]
-  pre.k <- params[7]
+  p <- sapply(rexp(reps, 1/params[1]), function(x){return(min(1,x))})
+  end <- rpois(reps, params[2]-1) + 1
+  boost <- params[3]
+  pre.k <- params[4]
   
   # predict learning time for W (of NIW triple) in four triple condition
   # with boost
-  f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end, boost, c(0,rep(floor(end*pre.k),3)), 100)[[1]]})
+  f.times.four.known <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end[x], boost, c(0,rep(floor(end[x]*pre.k),3)), 100)[[1]]})
   
   # no boost
-  f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end, boost, c(0, 0, 0, 0), 100)[[1]]})
+  f.times.four.unknown <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(4, p[x], end[x], boost, c(0, 0, 0, 0), 100)[[1]]})
   
   # predict learning time in the one triple condition
-  f.times.one <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(1,p[x],end,0, c(0), 100)[[1]]})
+  f.times.one <- sapply(1:reps, function(x){dependent.accumulators.with.boundary(1,p[x],end[x],0, c(0), 100)[[1]]})
   
   
   model.data = c(
@@ -60,15 +52,14 @@ params = c(0.01, 20, 0.8, 50, 1, 0, 0)
 model(params)
 
 mappingFun <- function(x){
-  x[2] <- min(1/x[1], x[2])
-  x[5] <- round(x[5])
-  actualStart <- floor(x[5]*x[7])
-  x[7] <- actualStart/x[5]
+  x[2] <- round(x[2])
+  actualStart <- floor(x[2]*x[4])
+  x[4] <- actualStart/x[2]
   return(x)
 }
 
 # slow, fast mult, proportion fast, concentration, end, boost, pre.k
-result <- DEoptim(model, lower=c(0.00001, 1, 0, 0, 1, 0, 0), upper=c(1,1000,1,500,1000,100,1), fnMap=mappingFun, control=list(NP=100, itermax=300))
+result <- DEoptim(model, lower=c(0.00001, 1, 0, 0), upper=c(1, 1000, 100, 1), fnMap=mappingFun, control=list(NP=100, itermax=300))
 
 # empirical data ####
 

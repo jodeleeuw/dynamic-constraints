@@ -7,9 +7,9 @@ library(grid)
 source('model/dependent-accumulator-model.R')
 
 # set shared params
-reps <- 1000
-p <- rep(0.024, reps)#rbeta(reps, 1, 100)
-end <- rep(6, reps)#rpois(reps, 0) + 1
+reps <- 10000
+p <- rep(0.024, reps) #rbeta(reps, 1, 100)
+end <- rep(6, reps) #rpois(reps, 0) + 1
 boost <- 168
 
 # predict learning time for W (of NIW triple) in four triple condition
@@ -23,7 +23,7 @@ finished.no.boost <- sapply(1:reps, function(x){sum(dependent.accumulators.no.so
 finished.one <- sapply(1:reps, function(x){sum(dependent.accumulators.no.sort(1,p[x],end[x],0)<=25)})
 
 # make data frame
-finish.data <- data.frame(condition=c(rep("Four triples - dependent", reps), rep("Four triples - independent", reps), rep("One triple", reps)),
+finish.data <- data.frame(condition=c(rep("Four triples", reps), rep("Four triples - independent", reps), rep("One triple", reps)),
                           finished.count=c(finished.boost, finished.no.boost, finished.one))
 
 finish.data$proportion.correct <- mapply(function(c,f){
@@ -41,24 +41,6 @@ finish.data.summary <- ddply(finish.data, .(condition), function(s){
 # empirical data ####
 empirical.data <- data.frame(condition=c('Four triples', 'One triple'),
                              mid=c(.733, .59), low=c(0.7,.512), high=c(0.767,.662))
-
-# make plots ####
-
-empirical.plot.2.1 <- ggplot(empirical.data, aes(x=condition, y=mid,ymax=high,ymin=low))+
-  geom_pointrange()+
-  labs(x="\nExperiment condition", y="Proportion correct\n",title="Experiment 2.1")+
-  coord_cartesian(ylim=c(0.5,1.0))+
-  theme_minimal()+
-  theme(plot.margin=unit(c(1,1,2,1),units="lines"))
-
-model.plot.2.1 <- ggplot(finish.data.summary, aes(x=condition, y=m,ymax=m+se,ymin=m-se))+
-  geom_pointrange()+
-  labs(x="\nModel", y="",title="Model Results")+
-  coord_cartesian(ylim=c(0.5,1.0))+
-  theme_minimal()+
-  theme(plot.margin=unit(c(1,1,2,1),units="lines"))
-
-grid.arrange(empirical.plot.2.1, model.plot.2.1, nrow=1)
 
 # experiment 2.2 ####
 
@@ -108,3 +90,24 @@ model.plot.2.2 <- ggplot(finish.data.summary.2.2, aes(x=condition, y=m,ymax=m+se
   theme(plot.margin=unit(c(2,1,1,1),units="lines"))
 
 grid.arrange(empirical.plot.2.1, model.plot.2.1,empirical.plot.2.2, model.plot.2.2, nrow=2)
+
+
+#### plot v2 ####
+
+empirical.plot.2.1 <- ggplot(empirical.data, aes(x=condition, y=mid,ymax=high,ymin=low))+
+  geom_pointrange()+
+  geom_point(shape=95, size=10, colour="red", aes(y=m,ymax=NULL,ymin=NULL), data=finish.data.summary)+
+  labs(x="\nExperiment condition", y="Proportion correct\n",title="Experiment 2.1")+
+  coord_cartesian(ylim=c(0.5,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(1,2,1,1),units="lines"))
+
+empirical.plot.2.2 <- ggplot(empirical.data.2.2, aes(x=condition, y=mid,ymax=high,ymin=low))+
+  geom_pointrange()+
+  geom_point(data=finish.data.summary.2.2, colour="red", aes(y=m,ymax=NULL,ymin=NULL), shape=95, size=10)+
+  labs(x="\nExperiment condition", y="Proportion correct\n",title="Experiment 2.2")+
+  coord_cartesian(ylim=c(0.3,1.0))+
+  theme_minimal()+
+  theme(plot.margin=unit(c(1,1,1,2),units="lines"))
+
+grid.arrange(empirical.plot.2.1, empirical.plot.2.2,  nrow=1)
